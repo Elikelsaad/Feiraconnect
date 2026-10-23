@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Painel{% endblock %} | {{ g.loja.ponto_comercial }} · {{ cfg.loja_nome }}</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/ui-folha.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fonts/fonts.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="admin">
+{% set ep = request.endpoint or '' %}
+<div class="adm">
+  <aside class="adm-menu">
+    <a class="perfil-lateral" href="{{ url_for('vendedor.perfil') }}">
+      {% if usuario.foto %}<img src="{{ url_for('static', filename=usuario.foto) }}" alt="">{% endif %}
+      <span><b>{{ g.loja.ponto_comercial }}</b><small>{{ usuario.nome_completo }}</small></span>
+    </a>
+    <nav aria-label="Menu do vendedor">
+      <a href="{{ url_for('vendedor.painel') }}" class="{{ 'ativo' if ep == 'vendedor.painel' }}">📊 Dashboard de vendas</a>
+      <a href="{{ url_for('vendedor.pedidos') }}" class="{{ 'ativo' if 'pedido' in ep }}">🧾 Pedidos</a>
+      <a href="{{ url_for('vendedor.financeiro') }}" class="{{ 'ativo' if 'financeiro' in ep }}">💰 Financeiro</a>
+      <a href="{{ url_for('vendedor.produtos') }}" class="{{ 'ativo' if 'produto' in ep }}">🥬 Produtos e fotos</a>
+      <a href="{{ url_for('vendedor.avaliacoes') }}" class="{{ 'ativo' if ep == 'vendedor.avaliacoes' }}">⭐ Visualizações e comentários</a>
+      <a href="{{ url_for('vendedor.notificacoes') }}" class="{{ 'ativo' if ep == 'vendedor.notificacoes' }}">🔔 Avisos <span class="badge-lat" data-notif-badge {{ 'hidden' if not notif_nao_lidas }}>{{ notif_nao_lidas }}</span></a>
+      <span class="sep">Conta</span>
+      <a href="{{ url_for('vendedor.conta_bancaria') }}" class="{{ 'ativo' if ep == 'vendedor.conta_bancaria' }}">🏦 Conta bancária{% if not g.conta %} <span class="badge-lat">!</span>{% endif %}</a>
+      <a href="{{ url_for('vendedor.perfil') }}" class="{{ 'ativo' if ep == 'vendedor.perfil' }}">👤 Meus dados</a>
+      <a href="{{ url_for('loja.vendedor', vendedor_id=usuario.id) }}" target="_blank">🛒 Ver minha banca na loja</a>
+      <a href="{{ url_for('auth.sair') }}">🚪 Sair</a>
+    </nav>
+  </aside>
+  <main class="adm-main">
+    {% if not g.conta and ep != 'vendedor.conta_bancaria' %}
+      <div class="flash erro" style="margin-bottom:14px">Seus produtos ainda não aparecem na loja: <a class="link" href="{{ url_for('vendedor.conta_bancaria') }}">cadastre a conta bancária</a> para receber os pagamentos.</div>
+    {% endif %}
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% if msgs %}<div class="flashes" style="margin:0 0 14px">{% for c, m in msgs %}<div class="flash {{ c }}">{{ m }}</div>{% endfor %}</div>{% endif %}
+    {% endwith %}
+    {% block conteudo %}{% endblock %}
+  </main>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script>window.FC = { csrf: "{{ csrf_token }}", apiNotif: "{{ url_for('api.notificacoes') }}" };</script>
+<script src="{{ url_for('static', filename='js/notificacoes.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

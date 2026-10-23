@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titulo %}Minhas compras | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+{% include "cliente/_menu.html" %}
+<section class="bloco">
+  <h2>Minhas compras</h2>
+  {% for p in pedidos %}
+  <a class="linha-pedido" href="{{ url_for('cliente.pedido', codigo=p.codigo) }}">
+    <span><b>{{ p.banca }}</b> · #{{ p.codigo }}<br><small>{{ p.resumo }}</small></span>
+    <span><small>{{ p.criado_em|data_br }}</small></span>
+    <span class="status-chip {{ p.status }}">{{ STATUS_PEDIDO[p.status] }}</span>
+    <b>{{ p.total|brl }}</b>
+  </a>
+  {% else %}
+  <p class="vazio-curto">Você ainda não fez compras.</p>
+  <a class="btn btn-verde" href="{{ url_for('loja.inicio') }}">Começar a comprar</a>
+  {% endfor %}
+</section>
+{% endblock %}

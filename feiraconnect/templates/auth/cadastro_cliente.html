@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titulo %}Cadastro de cliente | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+<form method="post" enctype="multipart/form-data" class="bloco form-cadastro" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <h1>Cadastro de cliente</h1>
+  <p class="sub">Com a sua conta você compra, acompanha a entrega pelo GPS, cancela em até {{ cfg.cancelamento_minutos }} minutos e avalia os produtos.</p>
+  {% set doc_rotulo = "CPF" %}{% include "auth/_pessoais.html" %}
+  {% set titulo = "Endereço de entrega" %}{% set com_referencia = true %}{% include "auth/_endereco.html" %}
+  <fieldset class="grupo-form">
+    <legend>Forma de pagamento <small>(opcional agora)</small></legend>
+    <p class="sub" style="margin-top:0">PIX não precisa de cadastro. Para cartão, aceitamos <b>Visa, Mastercard e Elo</b>, no crédito ou no débito.</p>
+    <div class="linha-campos">
+      <div class="campo"><label for="cartao_tipo">Tipo</label><select id="cartao_tipo" name="cartao_tipo"><option value="credito">Crédito</option><option value="debito">Débito</option></select></div>
+      <div class="campo" style="grid-column:span 2"><label for="cartao_numero">Número do cartão</label><input id="cartao_numero" name="cartao_numero" inputmode="numeric" autocomplete="cc-number" maxlength="23" data-mascara="cartao"><small data-bandeira></small></div>
+      <div class="campo" style="grid-column:span 2"><label for="cartao_titular">Nome impresso</label><input id="cartao_titular" name="cartao_titular" autocomplete="cc-name"></div>
+      <div class="campo"><label for="cartao_validade">Validade</label><input id="cartao_validade" name="cartao_validade" placeholder="MM/AA" maxlength="5" data-mascara="validade"></div>
+    </div>
+  </fieldset>
+  {% include "auth/_acesso.html" %}
+  <button class="btn btn-verde">Criar conta de cliente</button>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/cadastro.js') }}"></script>{% endblock %}

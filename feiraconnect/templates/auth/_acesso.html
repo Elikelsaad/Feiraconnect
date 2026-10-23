@@ -1,0 +1,10 @@
+<fieldset class="grupo-form">
+  <legend>Login de acesso</legend>
+  <div class="linha-campos">
+    <div class="campo"><label for="login">Login *</label><input id="login" name="login" required minlength="3" maxlength="10" autocomplete="username" pattern="[A-Za-z0-9._]{3,10}" value="{{ f.get('login','') }}" data-contador-max>
+      <small>3 a 10 caracteres: letras, números, ponto ou _ · <span data-contagem>0</span>/10</small></div>
+    <div class="campo"><label for="senha">Senha *</label><input id="senha" name="senha" type="password" required minlength="6" maxlength="10" autocomplete="new-password">
+      <small>6 a 10 caracteres, com letras e números</small></div>
+    <div class="campo"><label for="senha2">Repita a senha *</label><input id="senha2" name="senha2" type="password" required minlength="6" maxlength="10" autocomplete="new-password"></div>
+  </div>
+</fieldset>

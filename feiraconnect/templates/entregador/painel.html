@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar %}
+{% block titulo %}Minhas entregas | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+<section class="bloco entregador-topo" style="margin-top:18px">
+  {{ avatar(usuario.nome_completo, usuario.foto, 64) }}
+  <div><h1 style="font-size:1.3rem;margin:0">{{ usuario.nome_completo }}</h1>
+    <small>CPF {{ doc }} · {{ g.perfil.veiculo|capitalize }} {{ g.perfil.placa }} · login {{ usuario.login }}</small></div>
+  <div class="ganhos"><small>Hoje</small><b>{{ ganhos.total|brl }}</b><small>{{ ganhos.n }} entrega(s)</small></div>
+</section>
+
+{% macro cartao_entrega(p, botao=true) %}
+<div class="entrega-card">
+  <div><b>#{{ p.codigo }}</b> · <span class="status-chip {{ p.status }}">{{ STATUS_PEDIDO[p.status] }}</span>
+    <p>🏪 <b>{{ p.banca }}</b> — {{ p.banca_endereco }}<br>🏠 {{ p.endereco }}{% if p.referencia %} · {{ p.referencia }}{% endif %}</p>
+    <small>{{ p.volumes }} volume(s) · {{ p.distancia_km }} km · {{ MODOS_ENTREGA[p.entrega_modo].nome }}</small></div>
+  <div class="entrega-valor"><b>{{ p.entrega_valor|brl }}</b>
+    {% if botao %}<a class="btn btn-verde btn-peq" href="{{ url_for('entregador.entrega', codigo=p.codigo) }}">{{ 'Abrir' if p.entregador_id else 'Ver e aceitar' }}</a>{% endif %}</div>
+</div>
+{% endmacro %}
+
+{% if minhas %}
+<section class="secao"><div class="secao-topo"><h2>Em andamento</h2></div>
+  {% for p in minhas %}{{ cartao_entrega(p) }}{% endfor %}</section>
+{% endif %}
+
+<section class="secao"><div class="secao-topo"><h2>Disponíveis para {{ g.perfil.veiculo }}</h2><span class="ao-vivo"><span class="pulse"></span> atualiza sozinho</span></div>
+  {% for p in disponiveis %}{{ cartao_entrega(p) }}{% else %}<p class="vazio-curto">Nenhuma entrega esperando agora.</p>{% endfor %}</section>
+
+{% if outros %}
+<section class="secao"><div class="secao-topo"><h2>Outros veículos</h2></div>
+  {% for p in outros %}{{ cartao_entrega(p) }}{% endfor %}</section>
+{% endif %}
+
+<section class="secao"><div class="secao-topo"><h2>Histórico</h2></div>
+  {% for p in feitas %}{{ cartao_entrega(p, false) }}{% else %}<p class="vazio-curto">Nenhuma entrega concluída ainda.</p>{% endfor %}</section>
+{% endblock %}
+{% block scripts %}<script>setTimeout(() => location.reload(), 30000);</script>{% endblock %}

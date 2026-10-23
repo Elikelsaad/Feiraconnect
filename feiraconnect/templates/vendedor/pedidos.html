@@ -1,0 +1,28 @@
+{% extends "vendedor/base.html" %}
+{% block titulo %}Pedidos{% endblock %}
+{% block conteudo %}
+<div class="adm-topo"><h1>Pedidos</h1>
+  <div class="acoes">
+    <a class="btn btn-peq {{ 'btn-verde' if not status else 'btn-claro' }}" href="{{ url_for('vendedor.pedidos') }}">Todos</a>
+    {% for k, n in STATUS_PEDIDO.items() %}<a class="btn btn-peq {{ 'btn-verde' if status == k else 'btn-claro' }}" href="{{ url_for('vendedor.pedidos', status=k) }}">{{ n }}</a>{% endfor %}
+  </div>
+</div>
+<div class="tabela-wrap">
+<table class="tabela">
+  <thead><tr><th>Pedido</th><th>Data e hora</th><th>Cliente</th><th>Entrega</th><th>Pagamento</th><th>Total</th><th>Situação</th></tr></thead>
+  <tbody>
+  {% for p in pedidos %}
+  <tr>
+    <td><a class="link" href="{{ url_for('vendedor.pedido', codigo=p.codigo) }}">#{{ p.codigo }}</a></td>
+    <td>{{ p.criado_em|data_br }}</td>
+    <td>{{ p.cliente }}</td>
+    <td>{{ MODOS_ENTREGA[p.entrega_modo].nome }}<br><small>{{ p.distancia_km }} km</small></td>
+    <td>{{ MODALIDADES.get(p.modalidade, '') }} {{ p.bandeira }}</td>
+    <td><b>{{ p.total|brl }}</b></td>
+    <td><span class="status-chip {{ p.status }}">{{ STATUS_PEDIDO[p.status] }}</span></td>
+  </tr>
+  {% else %}<tr><td colspan="7">Nenhum pedido.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card %}
+{% block titulo %}{{ (categoria.nome if categoria else (q or 'Produtos')) }} | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+{% set titulo = categoria.nome if categoria else ('"' ~ q ~ '"' if q else ('Ofertas do dia' if filtro == 'promocao' else ('Sobras de fim de feira' if filtro == 'sobras' else 'Todos os produtos'))) %}
+<div class="busca-layout">
+  <aside class="filtros" aria-label="Filtros">
+    <h1>{{ titulo }}</h1>
+    <div class="total">{{ produtos|length }} resultado{{ 's' if produtos|length != 1 }}</div>
+
+    <div class="filtro">
+      <h3>Categorias</h3>
+      <a href="{{ url_for('loja.busca', q=q, ordem=ordem) }}" class="{{ 'ativo' if not cat }}">Todas</a>
+      {% for c in categorias_menu %}
+      <a href="{{ url_for('loja.busca', q=q, categoria=c.slug, ordem=ordem) }}" class="{{ 'ativo' if cat == c.slug }}">{{ c.nome }} <span style="opacity:.6">({{ c.total }})</span></a>
+      {% endfor %}
+    </div>
+    <div class="filtro">
+      <h3>Ofertas</h3>
+      <a href="{{ url_for('loja.busca', q=q, categoria=cat, filtro='promocao') }}" class="{{ 'ativo' if filtro == 'promocao' }}">Promoções e descontos</a>
+      <a href="{{ url_for('loja.busca', q=q, categoria=cat, filtro='sobras') }}" class="{{ 'ativo' if filtro == 'sobras' }}">Sobras de fim de feira</a>
+    </div>
+    <div class="filtro">
+      <h3>Preço</h3>
+      {% for v in [5, 10, 20, 50] %}
+      <a href="{{ url_for('loja.busca', q=q, categoria=cat, filtro=filtro, preco_max=v, ordem=ordem) }}" class="{{ 'ativo' if preco_max == v }}">Até R$ {{ v }}</a>
+      {% endfor %}
+    </div>
+    <div class="filtro">
+      <h3>Avaliação</h3>
+      {% for n in [4, 3] %}
+      <a href="{{ url_for('loja.busca', q=q, categoria=cat, filtro=filtro, estrelas=n, ordem=ordem) }}" class="{{ 'ativo' if estrelas == n }}"><span class="estrelas"><span style="width:{{ n * 20 }}%"></span></span> ou mais</a>
+      {% endfor %}
+    </div>
+    {% if q or cat or filtro or preco_max or estrelas %}<a class="link" href="{{ url_for('loja.busca') }}">Limpar filtros</a>{% endif %}
+  </aside>
+
+  <section>
+    <form class="ordenar" action="{{ url_for('loja.busca') }}">
+      {% for k, v in request.args.items() if k != 'ordem' %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+      <label for="ordem">Ordenar por</label>
+      <select id="ordem" name="ordem" onchange="this.form.submit()">
+        {% for k, nome in [('relevancia','Mais vendidos'),('menor_preco','Menor preço'),('maior_preco','Maior preço'),('avaliacao','Melhor avaliação'),('distancia','Mais perto de mim')] %}
+        <option value="{{ k }}" {{ 'selected' if ordem == k }}>{{ nome }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    {% if produtos %}
+      <div class="grade">{% for p in produtos %}{{ card(p) }}{% endfor %}</div>
+    {% else %}
+      <div class="vazio painel-branco">
+        <img src="{{ url_for('static', filename='img/produtos/cesta.svg') }}" alt="">
+        <h2>Não encontramos produtos</h2>
+        <p>Tente outra palavra ou remova algum filtro.</p>
+        <a class="btn btn-verde" href="{{ url_for('loja.busca') }}">Ver todos os produtos</a>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{# Campos comuns aos três cadastros. Variáveis: f (valores enviados), doc_rotulo #}
+<fieldset class="grupo-form">
+  <legend>Dados pessoais</legend>
+  <div class="foto-campo">
+    <label class="foto-preview" for="foto"><img data-preview-foto src="{{ url_for('static', filename='img/ui-folha.svg') }}" alt=""><span>Adicionar foto</span></label>
+    <div><label for="foto"><b>Sua foto *</b></label>
+      <input id="foto" name="foto" type="file" accept="image/*" capture="user" required data-foto>
+      <small>Foto do rosto, nítida. JPG, PNG ou WEBP.</small></div>
+  </div>
+  <div class="linha-campos">
+    <div class="campo" style="grid-column:1/-1"><label for="nome_completo">Nome completo *</label><input id="nome_completo" name="nome_completo" required autocomplete="name" value="{{ f.get('nome_completo','') }}"></div>
+    <div class="campo"><label for="documento">{{ doc_rotulo }} *</label><input id="documento" name="documento" required inputmode="numeric" data-mascara="{{ 'cpfcnpj' if 'CNPJ' in doc_rotulo else 'cpf' }}" value="{{ f.get('documento','') }}"></div>
+    <div class="campo"><label for="nascimento">Data de nascimento *</label><input id="nascimento" name="nascimento" type="date" required value="{{ f.get('nascimento','') }}"></div>
+    <div class="campo"><label for="celular">Celular para contato *</label><input id="celular" name="celular" required inputmode="tel" autocomplete="tel" placeholder="(92) 99123-4567" data-mascara="celular" value="{{ f.get('celular','') }}"></div>
+  </div>
+</fieldset>

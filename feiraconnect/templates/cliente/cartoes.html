@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Cartões | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+{% include "cliente/_menu.html" %}
+<div class="dois-col">
+  <section class="bloco">
+    <h2>Formas de pagamento</h2>
+    <p class="cartao-salvo" style="cursor:default"><span class="pix-logo">PIX</span><span>Sempre disponível · QR Code gerado na hora da compra</span></p>
+    {% for c in cartoes %}
+    <div class="cartao-salvo" style="cursor:default">
+      <span class="bandeira b-{{ c.bandeira|lower }}">{{ c.bandeira }}</span>
+      <span>•••• {{ c.final }} <small>{{ 'Crédito' if c.tipo == 'credito' else 'Débito' }} · {{ c.titular }} · validade {{ c.validade }}</small></span>
+      <form method="post" style="margin-left:auto"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ c.id }}"><button class="btn btn-del btn-peq" name="acao" value="remover">Remover</button></form>
+    </div>
+    {% else %}<p class="vazio-curto">Nenhum cartão cadastrado.</p>{% endfor %}
+  </section>
+  <form method="post" class="bloco">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <h2>Adicionar cartão</h2>
+    <p class="sub" style="margin-top:0">Visa, Mastercard ou Elo.</p>
+    <div class="campo"><label for="cartao_tipo">Tipo</label><select id="cartao_tipo" name="cartao_tipo"><option value="credito">Crédito</option><option value="debito">Débito</option></select></div>
+    <div class="campo"><label for="cartao_numero">Número</label><input id="cartao_numero" name="cartao_numero" required inputmode="numeric" autocomplete="cc-number" maxlength="23" data-mascara="cartao"><small data-bandeira></small></div>
+    <div class="campo"><label for="cartao_titular">Nome impresso</label><input id="cartao_titular" name="cartao_titular" required autocomplete="cc-name"></div>
+    <div class="campo"><label for="cartao_validade">Validade</label><input id="cartao_validade" name="cartao_validade" required placeholder="MM/AA" maxlength="5" data-mascara="validade"></div>
+    <button class="btn btn-verde btn-bloco">Salvar cartão</button>
+    <p class="aviso-seguro">🔒 Guardamos só a bandeira e os 4 últimos números.</p>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/cadastro.js') }}"></script>{% endblock %}

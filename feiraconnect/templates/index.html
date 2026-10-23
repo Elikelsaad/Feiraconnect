@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card, estrelas, icone_pin, icone_cat, rodape_similares, preco, avatar %}
+{% block conteudo %}
+
+<!-- Banner principal -->
+<section class="hero" aria-label="Destaques">
+  <div class="slides">
+    <div class="slide slide-1">
+      <div>
+        <span class="etiqueta">Promoções do dia</span>
+        <h2>Frutas da Amazônia com até 40% OFF</h2>
+        <p>Açaí, abacaxi de Novo Remanso, tucumã e castanha direto da banca do feirante para a sua casa.</p>
+        <a class="btn btn-branco" href="{{ url_for('loja.busca', filtro='promocao') }}">Ver ofertas de hoje</a>
+      </div>
+      <div class="imgs">
+        <img src="{{ url_for('static', filename='img/produtos/acai.svg') }}" alt="">
+        <img src="{{ url_for('static', filename='img/produtos/abacaxi.svg') }}" alt="">
+        <img src="{{ url_for('static', filename='img/produtos/tucuma.svg') }}" alt="">
+      </div>
+    </div>
+    <div class="slide slide-2">
+      <div>
+        <span class="etiqueta">Fim de feira · contra o desperdício</span>
+        <h2>Sobras do dia com preço de banana</h2>
+        <p>Alimentos em ótimo estado que sobraram na banca. Você economiza e ajuda a reduzir o desperdício.</p>
+        <a class="btn btn-branco" href="{{ url_for('loja.busca', filtro='sobras') }}">Aproveitar sobras</a>
+      </div>
+      <div class="imgs">
+        <img src="{{ url_for('static', filename='img/produtos/cesta.svg') }}" alt="">
+        <img src="{{ url_for('static', filename='img/produtos/limao.svg') }}" alt="">
+        <img src="{{ url_for('static', filename='img/produtos/abacate.svg') }}" alt="">
+      </div>
+    </div>
+    <div class="slide slide-3">
+      <div>
+        <span class="etiqueta">Entrega rápida</span>
+        <h2>De moto, de carro ou de bicicleta</h2>
+        <p>Ative o GPS e veja o frete e o tempo de entrega calculados a partir da banca mais próxima.</p>
+        <button class="btn btn-branco" type="button" data-abrir-gps>{{ icone_pin('#1B5E20', 18) }} Ativar minha localização</button>
+      </div>
+      <div class="imgs">
+        <img src="{{ url_for('static', filename='img/ui-moto.svg') }}" alt="" style="background:#fff;padding:22px">
+        <img src="{{ url_for('static', filename='img/ui-carro.svg') }}" alt="" style="background:#fff;padding:22px">
+        <img src="{{ url_for('static', filename='img/ui-bike.svg') }}" alt="" style="background:#fff;padding:22px">
+      </div>
+    </div>
+  </div>
+  <div class="dots"><button class="ativo" aria-label="Destaque 1"></button><button aria-label="Destaque 2"></button><button aria-label="Destaque 3"></button></div>
+</section>
+
+<!-- Localização do cliente (GPS) -->
+<section class="local-card" aria-label="Sua localização">
+  <span class="ico"><img src="{{ url_for('static', filename='img/ui-pin.svg') }}" alt=""></span>
+  <div class="txt">
+    {% if local %}
+      <small><span class="pulse"></span>Promoções perto de você</small>
+      <strong>{{ local.endereco }}</strong>
+    {% else %}
+      <small>Ative sua localização</small>
+      <strong>Veja as promoções das feiras mais perto de você e o frete exato</strong>
+    {% endif %}
+  </div>
+  <button class="btn btn-terra" type="button" data-abrir-gps>{{ 'Alterar endereço' if local else 'Usar meu GPS' }}</button>
+</section>
+
+<!-- Categorias -->
+<section class="categorias" aria-label="Categorias">
+  {% for c in categorias_menu %}
+  <a class="cat" href="{{ url_for('loja.busca', categoria=c.slug) }}"><span class="circ">{{ icone_cat(c) }}</span>{{ c.nome }}</a>
+  {% endfor %}
+</section>
+
+<!-- Ofertas do dia -->
+{% if promocoes %}
+<section class="secao">
+  <div class="secao-topo">
+    <h2>Ofertas do dia</h2>
+    <span class="contador-inline">Acaba em <span data-contador>--:--:--</span></span>
+    {% if local %}<span class="dist">{{ icone_pin() }} ordenadas pela distância até você</span>{% endif %}
+    <a class="link ver-mais" href="{{ url_for('loja.busca', filtro='promocao') }}">Ver todas</a>
+  </div>
+  <div class="trilho">{% for p in promocoes %}{{ card(p) }}{% endfor %}</div>
+</section>
+{% endif %}
+
+<!-- Faixa de vantagens -->
+<section class="vantagens" aria-label="Pagamento e entrega">
+  <div class="vantagem"><span class="ico"><span class="pix-logo">PIX</span></span><div><strong>Pague com PIX</strong><span>QR Code com o valor exato do pedido</span></div></div>
+  <div class="vantagem"><span class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><div><strong>Crédito ou débito</strong><span>Até {{ cfg.parcelas_max }}x sem juros no crédito</span></div></div>
+  <div class="vantagem"><span class="ico"><img src="{{ url_for('static', filename='img/ui-moto.svg') }}" alt=""></span><div><strong>Moto, carro ou bike</strong><span>Escolha a entrega que preferir</span></div></div>
+  <div class="vantagem"><span class="ico"><img src="{{ url_for('static', filename='img/ui-folha.svg') }}" alt=""></span><div><strong>Direto do produtor</strong><span>Origem de cada produto informada</span></div></div>
+</section>
+
+<!-- Sobras de fim de feira -->
+{% if sobras %}
+<section class="secao">
+  <div class="secao-topo">
+    <h2>Sobras de fim de feira</h2>
+    <span style="color:var(--texto-suave);font-size:.9rem">Compre com desconto e ajude a evitar o desperdício</span>
+    <a class="link ver-mais" href="{{ url_for('loja.busca', filtro='sobras') }}">Ver todas</a>
+  </div>
+  <div class="trilho">{% for p in sobras %}{{ card(p) }}{% endfor %}</div>
+</section>
+{% endif %}
+
+<!-- Feirantes -->
+<section class="secao" id="feirantes">
+  <div class="secao-topo"><h2>Feirantes perto de você</h2></div>
+  <div class="feirantes">
+    {% for v in vendedores %}
+    <a class="feirante" href="{{ url_for('loja.vendedor', vendedor_id=v.id) }}">
+      {{ avatar(v.nome, v.foto) }}
+      <div style="min-width:0">
+        <h3>{{ v.banca }}</h3>
+        <p>{{ v.nome }} · {{ v.feira }}</p>
+        <p style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">{{ estrelas(v.nota_media) }} {{ v.nota_media }}
+          {% if v.distancia %}<span class="dist">{{ icone_pin() }} {{ '%.1f'|format(v.distancia)|replace('.', ',') }} km</span>{% endif %}</p>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="secao">
+  <div class="secao-topo"><h2>Mais vendidos</h2><a class="link ver-mais" href="{{ url_for('loja.busca') }}">Ver tudo</a></div>
+  <div class="trilho">{% for p in mais_vendidos %}{{ card(p) }}{% endfor %}</div>
+</section>
+
+<!-- Aviso de promoções (abre 1x por dia) -->
+{% if promocoes %}
+<div class="modal modal-promo" id="modal-promo" role="dialog" aria-modal="true" aria-labelledby="promo-titulo">
+  <div class="modal-caixa">
+    <div class="topo-promo">
+      <button class="modal-fechar" type="button" data-fechar aria-label="Fechar">✕</button>
+      <h2 id="promo-titulo">🔥 Promoções de hoje</h2>
+      <p>Válidas até meia-noite · faltam <b data-contador>--:--:--</b></p>
+    </div>
+    {% if local %}
+      <p style="margin:0;font-size:.9rem">{{ icone_pin('#C2692B', 16) }} <b>Perto de:</b> {{ local.endereco }}</p>
+    {% else %}
+      <p style="margin:0;font-size:.9rem">Ative o GPS para ver as ofertas mais perto do seu endereço.</p>
+    {% endif %}
+    <div class="promo-lista">
+      {% for p in promocoes[:4] %}
+      <a class="promo-item" href="{{ url_for('loja.produto', produto_id=p.id) }}">
+        <img src="{{ url_for('static', filename=p.capa or 'img/produtos/padrao.svg') }}" alt="">
+        <div><b>{{ p.nome }}</b><br><small style="color:var(--texto-suave)">{{ p.vendedor_banca }} · {{ p.vendedor_feira }}{% if p.distancia %} · {{ '%.1f'|format(p.distancia)|replace('.', ',') }} km{% endif %}</small></div>
+        <div class="pv">{% if p.preco_original %}<small class="preco-antigo">{{ p.preco_original|brl }}</small>{% endif %}<b>{{ p.preco|brl }}</b></div>
+      </a>
+      {% endfor %}
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      {% if not local %}<button class="btn btn-terra" type="button" data-abrir-gps>{{ icone_pin('#fff', 16) }} Usar meu GPS</button>{% endif %}
+      <a class="btn btn-verde" href="{{ url_for('loja.busca', filtro='promocao') }}" data-fechar>Ver todas as ofertas</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block rodape_similares %}
+{{ rodape_similares(melhor_avaliados, "Mais bem avaliados pelos clientes", "Produtos com as melhores notas — de R$ 2,50 a R$ 45,00") }}
+{% endblock %}

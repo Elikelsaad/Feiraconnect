@@ -1,0 +1,8 @@
+__pycache__/
+.pytest_cache/
+venv/
+*.db
+*.db-wal
+*.db-shm
+feiraconnect/static/uploads/*
+!feiraconnect/static/uploads/.gitkeep

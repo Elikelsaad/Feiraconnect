@@ -1,0 +1,64 @@
+{% extends "vendedor/base.html" %}
+{% block titulo %}Financeiro{% endblock %}
+{% block conteudo %}
+<div class="adm-topo"><h1>Movimentação financeira <span class="ao-vivo"><span class="pulse"></span> ao vivo</span></h1>
+  <form class="mini-form periodo-form">
+    <label for="de">De</label><input id="de" type="date" name="de" value="{{ de }}">
+    <label for="ate">até</label><input id="ate" type="date" name="ate" value="{{ ate }}">
+    <button class="btn btn-claro btn-peq">Filtrar</button>
+    <a class="btn btn-claro btn-peq" href="{{ url_for('vendedor.financeiro_csv', de=de, ate=ate) }}">Baixar planilha (CSV)</a>
+  </form>
+</div>
+<div class="kpis">
+  <div class="kpi"><small>Recebido hoje</small><b data-hoje-valor>—</b><span class="var neutro" data-hoje-qtd></span></div>
+  <div class="kpi"><small>Recebido no período</small><b>{{ aprovado|brl }}</b></div>
+  <div class="kpi terra"><small>Aguardando PIX</small><b>{{ pendente|brl }}</b></div>
+  <div class="kpi marrom"><small>Estornado</small><b>{{ estornado|brl }}</b></div>
+  {% for m, v in por_mod.items() %}<div class="kpi"><small>{{ MODALIDADES[m] }}</small><b>{{ v|brl }}</b></div>{% endfor %}
+</div>
+<div class="tabela-wrap">
+<table class="tabela" id="extrato">
+  <thead><tr><th>Data e hora</th><th>Pedido</th><th>Cliente</th><th>Forma de pagamento</th><th style="text-align:right">Valor</th><th>Situação</th></tr></thead>
+  <tbody>
+  {% for m in movs %}
+  <tr data-id="{{ m.id }}">
+    <td>{{ m.momento|data_br }}</td>
+    <td><a class="link" href="{{ url_for('vendedor.pedido', codigo=m.codigo) }}">#{{ m.codigo }}</a></td>
+    <td>{{ m.cliente }}</td>
+    <td>{{ MODALIDADES[m.modalidade] }} {{ m.bandeira }}{% if m.cartao_final %} •••• {{ m.cartao_final }}{% endif %}{% if m.parcelas > 1 %} · {{ m.parcelas }}x{% endif %}</td>
+    <td style="text-align:right" class="{{ 'valor-neg' if m.status == 'estornado' }}"><b>{{ '−' if m.status == 'estornado' }}{{ m.valor|brl }}</b></td>
+    <td><span class="tag {{ 'verde' if m.status == 'aprovado' else ('vermelho' if m.status in ('estornado','recusado') else 'laranja') }}">{{ {'aprovado':'Recebido','pendente':'Aguardando','estornado':'Estornado','recusado':'Recusado'}[m.status] }}</span></td>
+  </tr>
+  {% else %}<tr class="vazio-linha"><td colspan="6">Nenhuma movimentação no período.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  let ultimo = {{ ultimo }};
+  const corpo = document.querySelector("#extrato tbody");
+  const rot = { aprovado: ["verde", "Recebido"], pendente: ["laranja", "Aguardando"], estornado: ["vermelho", "Estornado"], recusado: ["vermelho", "Recusado"] };
+  const esc = t => { const d = document.createElement("div"); d.textContent = t ?? ""; return d.innerHTML; };
+  async function atualizar() {
+    try {
+      const j = await (await fetch("{{ url_for('api.financeiro') }}?desde=" + ultimo)).json();
+      document.querySelector("[data-hoje-valor]").textContent = j.hoje_valor;
+      document.querySelector("[data-hoje-qtd]").textContent = j.hoje_qtd + " pagamento(s)";
+      j.movimentos.forEach(m => {
+        const [cor, txt] = rot[m.status];
+        const html = `<td>${esc(m.momento)}</td><td><a class="link" href="/vendedor/pedidos/${esc(m.codigo)}">#${esc(m.codigo)}</a></td><td>${esc(m.cliente)}</td>
+          <td>${esc(m.modalidade)} ${esc(m.bandeira)}${m.final ? " •••• " + esc(m.final) : ""}${m.parcelas > 1 ? " · " + m.parcelas + "x" : ""}</td>
+          <td style="text-align:right"><b>${m.status === "estornado" ? "−" : ""}${esc(m.valor)}</b></td><td><span class="tag ${cor}">${txt}</span></td>`;
+        let tr = corpo.querySelector(`tr[data-id="${m.id}"]`);
+        if (!tr) { tr = document.createElement("tr"); tr.dataset.id = m.id; corpo.prepend(tr); const v = corpo.querySelector(".vazio-linha"); if (v) v.remove(); }
+        tr.innerHTML = html; tr.classList.add("novo"); setTimeout(() => tr.classList.remove("novo"), 4000);
+        ultimo = Math.max(ultimo, m.id);
+      });
+    } catch (e) {}
+  }
+  atualizar(); setInterval(atualizar, 6000);
+})();
+</script>
+{% endblock %}

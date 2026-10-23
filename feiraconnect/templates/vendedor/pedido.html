@@ -1,0 +1,53 @@
+{% extends "vendedor/base.html" %}
+{% from "_macros.html" import avatar %}
+{% block titulo %}Pedido {{ ped.codigo }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">{% endblock %}
+{% block conteudo %}
+<div class="adm-topo"><h1>Pedido #{{ ped.codigo }} <span class="status-chip {{ ped.status }}">{{ STATUS_PEDIDO[ped.status] }}</span></h1><a class="link" href="{{ url_for('vendedor.pedidos') }}">← Voltar</a></div>
+<div class="adm-grid">
+  <section class="bloco">
+    <h2>Itens</h2>
+    <table class="tabela"><thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Total</th></tr></thead>
+      <tbody>{% for i in itens %}<tr><td>{{ i.nome }}</td><td>{{ i.quantidade }}</td><td>{{ i.preco|brl }}</td><td>{{ (i.preco * i.quantidade)|brl }}</td></tr>{% endfor %}</tbody></table>
+    <div class="resumo" style="position:static;margin-top:10px">
+      <div class="linha"><span>Produtos</span><span>{{ ped.subtotal|brl }}</span></div>
+      <div class="linha"><span>Entrega ({{ MODOS_ENTREGA[ped.entrega_modo].nome }}, {{ ped.distancia_km }} km)</span><span>{{ ped.entrega_valor|brl }}</span></div>
+      <div class="linha total"><span>Total</span><span>{{ ped.total|brl }}</span></div>
+    </div>
+    <h2 style="margin-top:18px">Pagamento</h2>
+    {% for pg in pags %}
+      <p class="linha-pag"><span class="tag {{ 'verde' if pg.status == 'aprovado' else ('vermelho' if pg.status in ('estornado','recusado') else 'laranja') }}">{{ pg.status|capitalize }}</span>
+        {{ MODALIDADES[pg.modalidade] }} {{ pg.bandeira }}{% if pg.cartao_final %} •••• {{ pg.cartao_final }}{% endif %}{% if pg.parcelas > 1 %} em {{ pg.parcelas }}x{% endif %} · <b>{{ pg.valor|brl }}</b>
+        <small>{{ (pg.estornado_em or pg.confirmado_em or pg.criado_em)|data_br }}</small></p>
+    {% endfor %}
+  </section>
+  <section class="bloco">
+    <h2>Cliente e entrega</h2>
+    <div class="pessoa">{{ avatar(cliente.nome_completo, cliente.foto, 44) }}<div><b>{{ cliente.nome_completo }}</b><br><small>{{ cliente.celular }}</small></div></div>
+    <p style="margin:10px 0 4px">📍 {{ ped.endereco }}</p>
+    {% if ped.referencia %}<p style="margin:0 0 10px;color:var(--texto-suave)">Referência: {{ ped.referencia }}</p>{% endif %}
+    {% if entregador %}<div class="pessoa">{{ avatar(entregador.nome_completo, entregador.foto, 44) }}<div><b>{{ entregador.nome_completo }}</b> · entregador<br><small>{{ entregador.veiculo|capitalize }} {{ entregador.placa }} · {{ entregador.celular }}</small></div></div>{% endif %}
+
+    <form method="post" class="acoes-pedido">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {% if ped.status == 'aguardando_pagamento' %}<button class="btn btn-terra" name="acao" value="confirmar_pix">✔ Confirmar que o PIX caiu na conta</button>{% endif %}
+      {% if ped.status == 'pago' %}<button class="btn btn-verde" name="acao" value="em_preparo">Começar a separar</button>{% endif %}
+      {% if ped.status == 'em_preparo' %}
+        {% if ped.entrega_modo == 'retirada' %}<button class="btn btn-verde" name="acao" value="entregue">Cliente retirou na banca</button>
+        {% else %}<button class="btn btn-verde" name="acao" value="aguardando_entregador">Pronto · chamar entregador</button>{% endif %}
+      {% endif %}
+      {% if ped.status in ('aguardando_pagamento','pago','em_preparo','aguardando_entregador') %}
+        <details class="cancelar"><summary>Cancelar pedido</summary>
+          <input name="motivo" placeholder="Motivo (ex.: produto acabou)" maxlength="300">
+          <button class="btn btn-del btn-peq" name="acao" value="cancelar">Confirmar cancelamento</button></details>
+      {% endif %}
+    </form>
+    {% if ped.status == 'cancelado' %}<p class="flash erro">Cancelado {{ 'pelo cliente' if ped.cancelado_por == 'cliente' else 'pelo vendedor' }} em {{ ped.cancelado_em|data_br }}{% if ped.motivo_cancelamento %} · {{ ped.motivo_cancelamento }}{% endif %}</p>{% endif %}
+  </section>
+</div>
+{% if ped.entrega_modo != 'retirada' and ped.status in ('aguardando_entregador','saiu_entrega','entregue') %}<div style="margin-top:18px">{% include "_rastreio.html" %}</div>{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+<script src="{{ url_for('static', filename='js/rastreio.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titulo %}Cadastro de vendedor | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+<form method="post" enctype="multipart/form-data" class="bloco form-cadastro" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <h1>Cadastro de vendedor</h1>
+  <p class="sub">Você será o administrador do seu acesso: cadastra produtos, fotos e acompanha as vendas. Depois do cadastro, informe a conta bancária para receber.</p>
+  {% set doc_rotulo = "CPF ou CNPJ" %}{% include "auth/_pessoais.html" %}
+  <fieldset class="grupo-form">
+    <legend>Ponto comercial</legend>
+    <div class="linha-campos">
+      <div class="campo"><label for="ponto_comercial">Nome do ponto comercial / banca *</label><input id="ponto_comercial" name="ponto_comercial" required value="{{ f.get('ponto_comercial','') }}" placeholder="Ex.: Banca da Dona Raimunda"></div>
+      <div class="campo"><label for="feira">Feira onde trabalha</label><input id="feira" name="feira" list="feiras" value="{{ f.get('feira','') }}" placeholder="Ex.: Feira da Manaus Moderna">
+        <datalist id="feiras"><option value="Feira da Manaus Moderna"><option value="Feira da Panair"><option value="Feira do Produtor Rural"><option value="Feira da Banana"><option value="Feira do Parque 10"><option value="Feira da Compensa"><option value="Feira do Mutirão"></datalist></div>
+      <div class="campo" style="grid-column:1/-1"><label for="descricao">Sobre a banca</label><textarea id="descricao" name="descricao" rows="2" maxlength="500">{{ f.get('descricao','') }}</textarea></div>
+    </div>
+  </fieldset>
+  {% set titulo = "Endereço" %}{% set com_referencia = false %}{% include "auth/_endereco.html" %}
+  {% include "auth/_acesso.html" %}
+  <button class="btn btn-terra">Criar conta de vendedor</button>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/cadastro.js') }}"></script>{% endblock %}

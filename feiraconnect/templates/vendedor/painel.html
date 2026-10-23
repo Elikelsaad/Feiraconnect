@@ -1,0 +1,106 @@
+{% extends "vendedor/base.html" %}
+{% block titulo %}Dashboard de vendas{% endblock %}
+{% block conteudo %}
+{% set k = d.kpis %}
+<div class="adm-topo">
+  <div>
+    <h1>Dashboard de vendas</h1>
+    <p class="sub-topo">{{ d.rotulo }} · comparado com {{ d.rotulo_anterior }}</p>
+  </div>
+  <div class="periodo-nav">
+    <div class="abas" role="tablist">
+      {% for chave, nome in periodos.items() %}
+      <a role="tab" class="{{ 'ativo' if d.periodo == chave }}" href="{{ url_for('vendedor.painel', periodo=chave) }}">{{ nome }}</a>
+      {% endfor %}
+    </div>
+    <a class="btn btn-claro btn-peq" href="{{ url_for('vendedor.painel', periodo=d.periodo, ref=d.ref_anterior) }}" aria-label="Período anterior">←</a>
+    <form class="mini-form"><input type="hidden" name="periodo" value="{{ d.periodo }}"><input type="date" name="ref" value="{{ d.ref }}" onchange="this.form.submit()" aria-label="Escolher data"></form>
+    {% if d.pode_avancar %}<a class="btn btn-claro btn-peq" href="{{ url_for('vendedor.painel', periodo=d.periodo, ref=d.ref_proximo) }}" aria-label="Próximo período">→</a>{% endif %}
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><small>Faturamento</small><b>{{ k.faturamento|brl }}</b>
+    {% if d.var_faturamento is not none %}<span class="var {{ 'sobe' if d.var_faturamento >= 0 else 'desce' }}">{{ '▲' if d.var_faturamento >= 0 else '▼' }} {{ d.var_faturamento|abs }}%</span>{% endif %}</div>
+  <div class="kpi terra"><small>Pedidos pagos</small><b>{{ k.pedidos_pagos }}</b>
+    {% if d.var_pedidos is not none %}<span class="var {{ 'sobe' if d.var_pedidos >= 0 else 'desce' }}">{{ '▲' if d.var_pedidos >= 0 else '▼' }} {{ d.var_pedidos|abs }}%</span>{% endif %}</div>
+  <div class="kpi marrom"><small>Ticket médio</small><b>{{ k.ticket_medio|brl }}</b></div>
+  <div class="kpi"><small>Itens vendidos</small><b>{{ k.itens }}</b></div>
+  <div class="kpi terra"><small>Visualizações</small><b>{{ k.visualizacoes }}</b><span class="var neutro">{{ k.visitantes }} visitantes · {{ k.conversao }}% compraram</span></div>
+  <div class="kpi marrom"><small>Estornos</small><b>{{ k.estornado|brl }}</b><span class="var neutro">{{ k.pedidos_cancelados }} cancelado(s)</span></div>
+</div>
+
+<div class="adm-grid">
+  <section class="bloco">
+    <h2>Faturamento {{ {'dia':'por hora','mes':'por dia','trimestre':'por semana','ano':'por mês'}[d.periodo] }}</h2>
+    <div class="grafico-caixa"><canvas id="g-serie" aria-label="Gráfico de faturamento"></canvas></div>
+  </section>
+  <section class="bloco">
+    <h2>Por forma de pagamento</h2>
+    {% if d.modalidades %}
+    <div class="grafico-caixa curto"><canvas id="g-modalidade" aria-label="Faturamento por forma de pagamento"></canvas></div>
+    <table class="tabela" style="margin-top:8px">
+      <tbody>{% for m in d.modalidades %}<tr><td>{{ MODALIDADES[m.modalidade] }} {{ m.bandeira if m.bandeira != '—' }}</td><td>{{ m.quantidade }}×</td><td style="text-align:right"><b>{{ m.valor|brl }}</b></td></tr>{% endfor %}</tbody>
+    </table>
+    {% else %}<p class="vazio-curto">Sem pagamentos neste período.</p>{% endif %}
+  </section>
+</div>
+
+<div class="adm-grid" style="margin-top:18px">
+  <section class="bloco">
+    <h2>Produtos que mais venderam</h2>
+    {% if d.top %}
+    <div style="overflow-x:auto"><table class="tabela">
+      <thead><tr><th>Produto</th><th>Qtd</th><th>Faturado</th><th>Visualizações</th><th>Nota</th></tr></thead>
+      <tbody>{% for t in d.top %}<tr><td><a class="link" href="{{ url_for('vendedor.produto_form', produto_id=t.produto_id) }}">{{ t.nome }}</a></td><td>{{ t.quantidade }}</td><td>{{ t.valor|brl }}</td><td>{{ t.visualizacoes }}</td><td style="white-space:nowrap">{{ '⭐ %s'|format(t.nota) if t.nota else '—' }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="vazio-curto">Nenhuma venda neste período.</p>{% endif %}
+  </section>
+  <section class="bloco">
+    <h2>Precisa da sua atenção</h2>
+    {% for p in pendentes %}
+      <a class="linha-alerta" href="{{ url_for('vendedor.pedido', codigo=p.codigo) }}"><span><b>#{{ p.codigo }}</b> · {{ MODOS_ENTREGA[p.entrega_modo].nome }}</span><span class="status-chip {{ p.status }}">{{ STATUS_PEDIDO[p.status] }}</span></a>
+    {% endfor %}
+    {% for p in estoque_baixo %}
+      <a class="linha-alerta" href="{{ url_for('vendedor.produto_form', produto_id=p.id) }}"><span>Estoque baixo: <b>{{ p.nome }}</b></span><span class="tag {{ 'vermelho' if p.estoque == 0 else 'laranja' }}">{{ p.estoque }} {{ p.unidade }}</span></a>
+    {% endfor %}
+    {% if not pendentes and not estoque_baixo %}<p class="vazio-curto">Tudo em dia. 👍</p>{% endif %}
+  </section>
+</div>
+<p class="nota-sql">Os números deste painel vêm das consultas SQL em <code>feiraconnect/sql/dashboard/</code>.</p>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.js') }}"></script>
+<script>
+(function () {
+  const serie = {{ d.serie|tojson }}, mods = {{ d.modalidades|tojson }};
+  const nomes = {{ MODALIDADES|tojson }};
+  const css = getComputedStyle(document.documentElement);
+  const verde = css.getPropertyValue("--verde").trim() || "#2E7D32", argila = css.getPropertyValue("--argila").trim() || "#C2692B";
+  const reais = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  Chart.defaults.font.family = "Inter, system-ui, sans-serif";
+  Chart.defaults.color = "#5E6B58";
+  new Chart(document.getElementById("g-serie"), {
+    type: "bar",
+    data: { labels: serie.map(s => s.rotulo), datasets: [
+      { type: "bar", label: "Faturamento", data: serie.map(s => s.valor), backgroundColor: verde, borderRadius: 4, yAxisID: "y" },
+      { type: "line", label: "Pedidos", data: serie.map(s => s.pedidos), borderColor: argila, backgroundColor: argila, tension: .3, pointRadius: 2, yAxisID: "y2" },
+    ] },
+    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { tooltip: { callbacks: { label: c => c.dataset.yAxisID === "y" ? ` ${reais(c.raw)}` : ` ${c.raw} pedido(s)` } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => reais(v) }, grid: { color: "#EEE8DA" } },
+                y2: { beginAtZero: true, position: "right", grid: { display: false }, ticks: { precision: 0 } },
+                x: { grid: { display: false } } } },
+  });
+  if (mods.length) new Chart(document.getElementById("g-modalidade"), {
+    type: "bar",
+    data: { labels: mods.map(m => nomes[m.modalidade] + (m.bandeira !== "—" ? " " + m.bandeira : "")),
+            datasets: [{ data: mods.map(m => m.valor), backgroundColor: mods.map(m => ({ pix: "#32BCAD", credito: verde, debito: "#8D5B3A" })[m.modalidade]), borderRadius: 4 }] },
+    options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => " " + reais(c.raw) } } },
+               scales: { x: { beginAtZero: true, ticks: { callback: v => reais(v) } }, y: { grid: { display: false } } } },
+  });
+  // Recarrega os números quando chega um pagamento novo
+  document.addEventListener("fc:notificacao", e => { if (e.detail.tipo === "pagamento") setTimeout(() => location.reload(), 1500); });
+})();
+</script>
+{% endblock %}

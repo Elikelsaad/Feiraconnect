@@ -1,0 +1,7 @@
+{% set ep = request.endpoint or '' %}
+<nav class="abas-cliente" aria-label="Minha conta">
+  <a class="{{ 'ativo' if 'pedido' in ep or ep == 'cliente.compra' }}" href="{{ url_for('cliente.pedidos') }}">Minhas compras</a>
+  <a class="{{ 'ativo' if ep == 'cliente.cartoes' }}" href="{{ url_for('cliente.cartoes') }}">Cartões</a>
+  <a class="{{ 'ativo' if ep == 'cliente.perfil' }}" href="{{ url_for('cliente.perfil') }}">Meus dados</a>
+  <a class="{{ 'ativo' if ep == 'cliente.notificacoes' }}" href="{{ url_for('cliente.notificacoes') }}">Avisos</a>
+</nav>

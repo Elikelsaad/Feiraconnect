@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icone_pin %}
+{% block titulo %}Finalizar compra | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+{% set f = form or {} %}
+{% set pag_sel = f.get('pagamento') or 'pix' %}
+<form method="post" class="dois-col" id="form-checkout" autocomplete="on">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div>
+    <section class="bloco etapa">
+      <h2><span class="num">1</span> Endereço de entrega</h2>
+      <div class="campo"><label for="endereco">Endereço completo</label>
+        <input id="endereco" name="endereco" value="{{ f.get('endereco') or endereco_txt }}" required>
+        <small>Do seu cadastro. Para mudar de vez, edite em <a class="link" href="{{ url_for('cliente.perfil') }}">Meus dados</a>.</small></div>
+      <div class="campo"><label for="referencia">Ponto de referência</label><input id="referencia" name="referencia" value="{{ f.get('referencia') or referencia }}"></div>
+    </section>
+
+    <section class="bloco etapa">
+      <h2><span class="num">2</span> Como você quer receber?</h2>
+      {% for e in entregas %}
+      <div class="entrega-vendedor">
+        <p class="ev-topo"><b>{{ e.banca }}</b> · {{ e.feira }} · {{ e.itens|length }} produto(s) · {{ e.subtotal|brl }}
+          <span class="dist">{{ icone_pin() }} {{ '%.1f'|format(e.distancia)|replace('.', ',') }} km</span></p>
+        <div class="opcoes">
+          {% set sel = f.get('entrega_' ~ e.vendedor_id) or 'moto' %}
+          {% for o in e.fretes %}
+          <div class="opcao">
+            <input type="radio" name="entrega_{{ e.vendedor_id }}" id="e-{{ e.vendedor_id }}-{{ o.modo }}" value="{{ o.modo }}" data-valor="{{ o.valor }}" data-vendedor="{{ e.vendedor_id }}"
+                   {{ 'disabled' if not o.disponivel }} {{ 'checked' if o.modo == sel and o.disponivel }}>
+            <label for="e-{{ e.vendedor_id }}-{{ o.modo }}">
+              <img src="{{ url_for('static', filename='img/ui-' ~ o.icone ~ '.svg') }}" alt="">
+              <strong>{{ o.nome }}</strong><small>{{ o.aviso or o.prazo }}</small>
+              <span class="v">{{ 'Grátis' if o.valor == 0 else o.valor|brl }}</span>
+            </label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </section>
+
+    <section class="bloco etapa">
+      <h2><span class="num">3</span> Forma de pagamento</h2>
+      <div class="opcoes">
+        <div class="opcao"><input type="radio" name="pagamento" id="p-pix" value="pix" {{ 'checked' if pag_sel == 'pix' }}>
+          <label for="p-pix"><span class="pix-logo" style="font-size:1.4rem">PIX</span><strong>PIX</strong><small>QR Code com o valor exato, direto na conta do feirante</small></label></div>
+        <div class="opcao"><input type="radio" name="pagamento" id="p-credito" value="credito" {{ 'checked' if pag_sel == 'credito' }}>
+          <label for="p-credito"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg><strong>Crédito</strong><small>Visa, Mastercard, Elo · até {{ parcelas_max }}x</small></label></div>
+        <div class="opcao"><input type="radio" name="pagamento" id="p-debito" value="debito" {{ 'checked' if pag_sel == 'debito' }}>
+          <label for="p-debito"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#8D5B3A" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M15 15h3"/></svg><strong>Débito</strong><small>Visa, Mastercard, Elo</small></label></div>
+      </div>
+
+      <div class="pag-painel" data-painel="pix">
+        Ao confirmar, você recebe um QR Code PIX {{ 'para cada feirante ' if entregas|length > 1 }}com o valor exato. Abra o app do seu banco e use <i>Ler QR Code</i> ou <i>PIX Copia e Cola</i>.
+      </div>
+      <div class="pag-painel" data-painel="cartao">
+        <div class="cartoes-salvos">
+          {% for c in cartoes %}
+          <label class="cartao-salvo" data-tipo="{{ c.tipo }}">
+            <input type="radio" name="cartao_id" value="{{ c.id }}" {{ 'checked' if f.get('cartao_id') == c.id|string }}>
+            <span class="bandeira b-{{ c.bandeira|lower }}">{{ c.bandeira }}</span>
+            <span>•••• {{ c.final }} <small>{{ 'Crédito' if c.tipo == 'credito' else 'Débito' }} · {{ c.titular }} · {{ c.validade }}</small></span>
+          </label>
+          {% endfor %}
+          <label class="cartao-salvo"><input type="radio" name="cartao_id" value="novo" {{ 'checked' if not cartoes or f.get('cartao_id') == 'novo' }}><span>+ Usar outro cartão</span></label>
+        </div>
+        <div class="linha-campos" data-cartao-novo>
+          <div class="campo" style="grid-column:1/-1"><label for="cartao_numero">Número do cartão</label><input id="cartao_numero" name="cartao_numero" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000" maxlength="23"><small data-bandeira></small></div>
+          <div class="campo" style="grid-column:1/-1"><label for="cartao_titular">Nome impresso no cartão</label><input id="cartao_titular" name="cartao_titular" autocomplete="cc-name"></div>
+          <div class="campo"><label for="cartao_validade">Validade</label><input id="cartao_validade" name="cartao_validade" placeholder="MM/AA" maxlength="5" inputmode="numeric" autocomplete="cc-exp"></div>
+          <label class="check-simples" style="grid-column:1/-1"><input type="checkbox" name="salvar_cartao" value="1" checked> Salvar este cartão para as próximas compras</label>
+        </div>
+        <div class="linha-campos">
+          <div class="campo"><label for="cartao_cvv">CVV</label><input id="cartao_cvv" name="cartao_cvv" placeholder="123" maxlength="4" inputmode="numeric" autocomplete="cc-csc"></div>
+          <div class="campo" data-so-credito><label for="parcelas">Parcelas</label><select id="parcelas" name="parcelas"></select></div>
+        </div>
+        <p class="aviso-seguro">🔒 Aceitamos Visa, Mastercard e Elo. O número completo e o CVV não ficam guardados.</p>
+      </div>
+    </section>
+  </div>
+
+  <aside class="bloco resumo">
+    <h2>Resumo</h2>
+    {% for e in entregas %}
+      <p class="resumo-banca">{{ e.banca }}</p>
+      {% for i in e.itens %}<div class="linha" style="font-size:.86rem"><span>{{ i.qtd }}× {{ i.p.nome }}</span><span>{{ i.total|brl }}</span></div>{% endfor %}
+      <div class="linha" style="font-size:.86rem;color:var(--texto-suave)"><span>Entrega</span><span data-frete="{{ e.vendedor_id }}">—</span></div>
+    {% endfor %}
+    <div class="linha" style="border-top:1px solid var(--borda);margin-top:6px;padding-top:10px"><span>Produtos</span><span>{{ subtotal|brl }}</span></div>
+    <div class="linha total"><span>Total</span><span data-total>{{ subtotal|brl }}</span></div>
+    <button class="btn btn-verde btn-bloco" style="margin-top:12px">Confirmar compra</button>
+    <p style="font-size:.76rem;color:var(--texto-suave);text-align:center">Você pode cancelar em até {{ cfg.cancelamento_minutos }} minutos após a confirmação.</p>
+  </aside>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const subtotal = {{ subtotal }}, pMax = {{ parcelas_max }}, pMin = {{ parcela_min }};
+  const reais = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const sel = document.getElementById("parcelas");
+  let ultimoPag = null;
+  function atualizar() {
+    let fretes = 0;
+    document.querySelectorAll("[data-frete]").forEach(el => {
+      const r = document.querySelector(`input[data-vendedor="${el.dataset.frete}"]:checked`);
+      const v = r ? Number(r.dataset.valor) : 0; fretes += v;
+      el.textContent = r ? (v === 0 ? "Grátis" : reais(v)) : "—";
+    });
+    const total = subtotal + fretes;
+    document.querySelector("[data-total]").textContent = reais(total);
+    const n = Math.max(1, Math.min(pMax, Math.floor(total / pMin))), atual = sel.value;
+    sel.innerHTML = "";
+    for (let i = 1; i <= n; i++) sel.add(new Option(`${i}x de ${reais(total / i)} sem juros`, i));
+    if (atual && atual <= n) sel.value = atual;
+    const pag = document.querySelector("input[name=pagamento]:checked").value;
+    document.querySelector("[data-painel=pix]").classList.toggle("ativo", pag === "pix");
+    document.querySelector("[data-painel=cartao]").classList.toggle("ativo", pag !== "pix");
+    document.querySelector("[data-so-credito]").style.display = pag === "credito" ? "" : "none";
+    document.querySelectorAll(".cartao-salvo[data-tipo]").forEach(c => {
+      const ok = c.dataset.tipo === pag; c.hidden = !ok;
+      if (!ok) c.querySelector("input").checked = false;
+    });
+    if (pag !== ultimoPag) {   // trocou a forma de pagamento: sugere o primeiro cartão salvo daquele tipo
+      ultimoPag = pag;
+      const salvo = document.querySelector(".cartao-salvo[data-tipo]:not([hidden]) input");
+      if (salvo && !{{ 'true' if form and form.get('cartao_id') else 'false' }}) salvo.checked = true;
+    }
+    if (!document.querySelector("input[name=cartao_id]:checked")) {   // escolhe o primeiro cartão salvo do tipo, ou "outro cartão"
+      const salvo = document.querySelector(".cartao-salvo[data-tipo]:not([hidden]) input");
+      (salvo || document.querySelector("input[name=cartao_id][value=novo]")).checked = true;
+    }
+    const novo = document.querySelector("input[name=cartao_id][value=novo]").checked;
+    document.querySelector("[data-cartao-novo]").hidden = !novo;
+    document.querySelectorAll("[data-cartao-novo] input:not([type=checkbox])").forEach(i => i.required = pag !== "pix" && novo);
+    document.getElementById("cartao_cvv").required = pag !== "pix";
+  }
+  document.querySelectorAll("input[type=radio]").forEach(i => i.addEventListener("change", atualizar));
+  atualizar();
+  const num = document.getElementById("cartao_numero"), band = document.querySelector("[data-bandeira]");
+  num.addEventListener("input", () => {
+    const d = num.value.replace(/\D/g, "").slice(0, 19);
+    num.value = d.replace(/(.{4})/g, "$1 ").trim();
+    band.textContent = /^(4011|4312|4389|4514|4576|5041|5066|5067|509|6277|6362|6363|650|6516|6550)/.test(d) ? "Elo" : /^4/.test(d) ? "Visa" : /^(5[1-5]|2[2-7])/.test(d) ? "Mastercard" : (d.length > 5 ? "Bandeira não aceita (só Visa, Mastercard e Elo)" : "");
+  });
+  const val = document.getElementById("cartao_validade");
+  val.addEventListener("input", () => { const d = val.value.replace(/\D/g, "").slice(0, 4); val.value = d.length > 2 ? d.slice(0, 2) + "/" + d.slice(2) : d; });
+})();
+</script>
+{% endblock %}

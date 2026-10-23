@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Meus dados | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+{% include "cliente/_menu.html" %}
+<form method="post" enctype="multipart/form-data" class="bloco">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="foto-campo">
+    <label class="foto-preview tem-foto" for="foto"><img data-preview-foto src="{{ url_for('static', filename=usuario.foto) if usuario.foto else url_for('static', filename='img/ui-folha.svg') }}" alt=""></label>
+    <div><b>{{ usuario.nome_completo }}</b><br><small>CPF {{ doc }} · login <b>{{ usuario.login }}</b> · nascimento {{ usuario.nascimento|data_br(false) }}</small><br>
+      <label class="btn btn-claro btn-peq" style="margin-top:6px">Trocar foto<input id="foto" name="foto" type="file" accept="image/*" hidden data-foto></label></div>
+  </div>
+  <div class="linha-campos">
+    <div class="campo"><label for="celular">Celular</label><input id="celular" name="celular" value="{{ usuario.celular }}" data-mascara="celular"></div>
+    <div class="campo"><label for="cep">CEP</label><input id="cep" name="cep" value="{{ end.cep }}" data-mascara="cep" data-buscar-cep><small data-cep-status></small></div>
+    <div class="campo" style="grid-column:span 2"><label for="logradouro">Rua</label><input id="logradouro" name="logradouro" value="{{ end.logradouro }}"></div>
+    <div class="campo"><label for="numero">Número</label><input id="numero" name="numero" value="{{ end.numero }}"></div>
+    <div class="campo"><label for="complemento">Complemento</label><input id="complemento" name="complemento" value="{{ end.complemento }}"></div>
+    <div class="campo"><label for="bairro">Bairro</label><input id="bairro" name="bairro" value="{{ end.bairro }}"></div>
+    <div class="campo"><label for="cidade">Cidade</label><input id="cidade" name="cidade" value="{{ end.cidade }}"></div>
+    <div class="campo"><label for="uf">UF</label><input id="uf" name="uf" maxlength="2" value="{{ end.uf }}"></div>
+    <div class="campo" style="grid-column:1/-1"><label for="referencia">Ponto de referência</label><input id="referencia" name="referencia" value="{{ end.referencia }}"></div>
+  </div>
+  <input type="hidden" id="lat" name="lat" value=""><input type="hidden" id="lng" name="lng" value="">
+  <p class="gps-mini"><button type="button" class="btn btn-borda btn-peq" data-gps-cadastro>📍 Atualizar posição pelo GPS</button> <small data-gps-cadastro-status></small></p>
+  <button class="btn btn-verde">Salvar</button>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/cadastro.js') }}"></script>{% endblock %}

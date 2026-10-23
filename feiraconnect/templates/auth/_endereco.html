@@ -1,0 +1,16 @@
+{# Endereço com busca automática pelo CEP e posição pelo GPS. Variáveis: f, titulo, com_referencia #}
+<fieldset class="grupo-form">
+  <legend>{{ titulo }}</legend>
+  <div class="linha-campos">
+    <div class="campo"><label for="cep">CEP *</label><input id="cep" name="cep" required inputmode="numeric" placeholder="69000-000" data-mascara="cep" data-buscar-cep value="{{ f.get('cep','') }}"><small data-cep-status>Preenche a rua automaticamente</small></div>
+    <div class="campo" style="grid-column:span 2"><label for="logradouro">Rua *</label><input id="logradouro" name="logradouro" required value="{{ f.get('logradouro','') }}"></div>
+    <div class="campo"><label for="numero">Número *</label><input id="numero" name="numero" required value="{{ f.get('numero','') }}"></div>
+    <div class="campo"><label for="complemento">Complemento</label><input id="complemento" name="complemento" value="{{ f.get('complemento','') }}"></div>
+    <div class="campo"><label for="bairro">Bairro *</label><input id="bairro" name="bairro" required value="{{ f.get('bairro','') }}"></div>
+    <div class="campo"><label for="cidade">Cidade onde reside *</label><input id="cidade" name="cidade" required value="{{ f.get('cidade','') }}"></div>
+    <div class="campo"><label for="uf">UF</label><input id="uf" name="uf" maxlength="2" value="{{ f.get('uf','AM') }}"></div>
+    {% if com_referencia %}<div class="campo" style="grid-column:1/-1"><label for="referencia">Ponto de referência *</label><input id="referencia" name="referencia" required placeholder="Ex.: em frente à padaria, portão verde" value="{{ f.get('referencia','') }}"></div>{% endif %}
+  </div>
+  <input type="hidden" name="lat" id="lat" value="{{ f.get('lat','') }}"><input type="hidden" name="lng" id="lng" value="{{ f.get('lng','') }}">
+  <p class="gps-mini"><button type="button" class="btn btn-borda btn-peq" data-gps-cadastro>📍 Marcar a posição pelo GPS</button> <small data-gps-cadastro-status>{{ 'Posição marcada.' if f.get('lat') else 'Usada para calcular distância e frete.' }}</small></p>
+</fieldset>

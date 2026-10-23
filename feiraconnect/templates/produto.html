@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% from "_macros.html" import estrelas, preco, icone_pin, rodape_similares, avatar, estrelas_rotulo %}
+{% block titulo %}{{ p.nome }} | {{ cfg.loja_nome }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">{% endblock %}
+{% block conteudo %}
+{% set d = desconto_pct(p) %}
+{% set pmax = cfg.parcelas_max|int %}
+{% set pmin = cfg.parcela_minima|float %}
+{% set np = [1, [pmax, (p.preco // pmin)|int]|min]|max %}
+
+<nav class="migalhas" aria-label="Você está em">
+  <a href="{{ url_for('loja.inicio') }}">Início</a> › <a href="{{ url_for('loja.busca', categoria=p.categoria_slug) }}">{{ p.categoria_nome }}</a> › {{ p.nome }}
+</nav>
+
+<div class="produto-grid">
+  <div class="galeria" data-galeria>
+    {% set capa = imagens[0] if imagens else none %}
+    <figure class="galeria-principal">
+      <div class="galeria-img">
+        <img data-galeria-img src="{{ url_for('static', filename=capa.arquivo if capa else 'img/produtos/padrao.svg') }}" alt="{{ p.nome }}">
+        <div class="selos" style="position:absolute;top:12px;left:12px;display:flex;gap:6px;flex-wrap:wrap">
+          {% if p.promocao_dia %}<span class="selo selo-promo">Oferta do dia</span>{% endif %}
+          {% if p.fim_de_feira %}<span class="selo selo-sobra">Fim de feira</span>{% endif %}
+        </div>
+        {% if imagens|length > 1 %}<span class="galeria-contador" data-galeria-n>1 / {{ imagens|length }}</span>{% endif %}
+      </div>
+      <figcaption data-galeria-legenda {{ 'hidden' if not (capa and capa.legenda) }}>{{ capa.legenda if capa else '' }}</figcaption>
+    </figure>
+    {% if imagens|length > 1 %}
+    <div class="galeria-miniaturas" role="list">
+      {% for img in imagens %}
+      <button type="button" role="listitem" class="{{ 'ativa' if loop.first }}" data-src="{{ url_for('static', filename=img.arquivo) }}" data-legenda="{{ img.legenda }}" aria-label="Foto {{ loop.index }}">
+        <img src="{{ url_for('static', filename=img.miniatura) }}" alt="" loading="lazy"></button>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if dono %}<a class="btn btn-claro btn-peq" style="margin-top:8px" href="{{ url_for('vendedor.produto_form', produto_id=p.id) }}#fotos">Editar fotos e comentários</a>{% endif %}
+  </div>
+
+  <div class="produto-info">
+    <span class="sub">Fresco · +{{ p.vendidos }} vendidos · {{ p.visualizacoes }} visualizações</span>
+    <h1>{{ p.nome }}</h1>
+    <a href="#avaliacoes" class="nota-linha" style="font-size:.9rem">{{ p.nota_media }} {{ estrelas(p.nota_media) }} ({{ p.total_avaliacoes }} avaliações)</a>
+    <div style="margin-top:16px">
+      {% if p.preco_original %}<span class="preco-antigo" style="font-size:1rem">{{ p.preco_original|brl }}</span>{% endif %}
+      {{ preco(p.preco, d) }}
+      <div class="parcelas">{% if np > 1 %}em <b>{{ np }}x {{ (p.preco / np)|brl }} sem juros</b>{% else %}à vista no PIX, crédito ou débito{% endif %} · por {{ p.unidade }}</div>
+    </div>
+
+    <div class="atributos">
+      <div class="atributo"><span class="ico"><img src="{{ url_for('static', filename='img/ui-pin.svg') }}" alt=""></span><div><small>Origem do produto</small><b>{{ p.origem }}</b></div></div>
+      <div class="atributo"><span class="ico"><img src="{{ url_for('static', filename='img/ui-banca.svg') }}" alt=""></span><div><small>Vendido por</small><a class="link" href="{{ url_for('loja.vendedor', vendedor_id=p.vendedor_id) }}">{{ p.vendedor_nome }} — {{ p.vendedor_banca }}</a></div></div>
+      <div class="atributo"><span class="ico"><img src="{{ url_for('static', filename='img/ui-folha.svg') }}" alt=""></span><div><small>Feira</small>{{ p.vendedor_feira }} · {{ p.vendedor_endereco }}, {{ p.vendedor_cidade }}</div></div>
+    </div>
+
+    <div class="fretes" id="fretes">
+      <h3><span>Entrega {% if p.distancia %}<small style="font-weight:400">· {{ '%.1f'|format(p.distancia)|replace('.', ',') }} km da banca</small>{% endif %}</span>
+        <button class="link" style="background:none;border:0;cursor:pointer;font-size:.82rem" type="button" data-abrir-gps>{{ icone_pin() }} {{ 'Alterar CEP/endereço' if local else 'Calcular com GPS' }}</button></h3>
+      {% for f in fretes %}
+      <div class="frete-linha{{ ' indisp' if not f.disponivel }}">
+        <img src="{{ url_for('static', filename='img/ui-' ~ f.icone ~ '.svg') }}" alt="">
+        <span class="f-nome"><b>{{ f.nome }}</b><small>{{ f.aviso or f.prazo }} · {{ f.descricao }}</small></span>
+        <span class="f-valor{{ ' gratis' if f.valor == 0 }}">{{ 'Grátis' if f.valor == 0 else f.valor|brl }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <aside class="compra-box" aria-label="Comprar">
+    {% if p.estoque > 0 and conta and not dono %}
+      <span class="estoque">Estoque disponível <small>({{ p.estoque }} {{ p.unidade }})</small></span>
+      <form method="post" action="{{ url_for('loja.carrinho_adicionar') }}" style="display:grid;gap:10px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="produto_id" value="{{ p.id }}">
+        <div class="qtd"><label for="qtd">Quantidade:</label>
+          <div class="qtd-ctrl"><button type="button" data-passo="-1" aria-label="Menos">−</button><input id="qtd" name="quantidade" type="number" value="1" min="1" max="{{ p.estoque }}"><button type="button" data-passo="1" aria-label="Mais">+</button></div>
+        </div>
+        <button class="btn btn-verde btn-bloco" name="comprar_agora" value="1">Comprar agora</button>
+        <button class="btn btn-claro btn-bloco">Adicionar ao carrinho</button>
+      </form>
+    {% else %}
+      <span class="estoque" style="color:var(--erro)">{{ 'Este produto é seu' if dono else ('Produto esgotado no momento' if p.estoque <= 0 else 'Indisponível para compra no momento') }}</span>
+      <a class="btn btn-borda btn-bloco" href="{{ url_for('loja.busca', categoria=p.categoria_slug) }}">Ver similares</a>
+    {% endif %}
+    <div class="vendedor-box">
+      <div class="linha">{{ avatar(p.vendedor_nome, p.vendedor_foto, 42) }}<div><b>{{ p.vendedor_banca }}</b><br><span class="nota-linha">{{ estrelas(vendedor.nota_media) }} {{ vendedor.nota_media }} · +{{ vendedor.total_vendidos }} vendas</span></div></div>
+    </div>
+    <div style="font-size:.85rem">
+      <b>Meios de pagamento</b>
+      <div class="pagamentos">
+        {% if conta %}
+          {% if conta.aceita_pix %}<span class="pag-chip pix-logo">PIX</span>{% endif %}
+          {% if conta.aceita_credito %}<span class="pag-chip">Crédito</span>{% endif %}
+          {% if conta.aceita_debito %}<span class="pag-chip">Débito</span>{% endif %}
+          {% if conta.aceita_credito or conta.aceita_debito %}
+            {% if conta.bandeira_visa %}<span class="pag-chip">Visa</span>{% endif %}
+            {% if conta.bandeira_mastercard %}<span class="pag-chip">Mastercard</span>{% endif %}
+            {% if conta.bandeira_elo %}<span class="pag-chip">Elo</span>{% endif %}
+          {% endif %}
+        {% else %}<span class="pag-chip">Vendedor ainda não recebe pagamentos</span>{% endif %}
+      </div>
+    </div>
+    <p class="aviso-seguro">🔒 Compra segura · devolução se o produto chegar estragado</p>
+  </aside>
+</div>
+
+<div class="produto-baixo">
+  <section class="bloco">
+    <h2>Descrição</h2>
+    <p style="margin:0 0 10px">{{ p.descricao }}</p>
+    <p style="margin:0;color:var(--texto-suave);font-size:.9rem"><b>Origem:</b> {{ p.origem }} · <b>Unidade de venda:</b> {{ p.unidade }} · <b>Categoria:</b> {{ p.categoria_nome }}</p>
+  </section>
+  <section class="bloco">
+    <h2>Onde fica a banca</h2>
+    <div id="mapa" class="mapa" data-lat="{{ p.vendedor_lat }}" data-lng="{{ p.vendedor_lng }}" data-nome="{{ p.vendedor_banca }}"
+         {% if local %}data-clat="{{ local.lat }}" data-clng="{{ local.lng }}"{% endif %}></div>
+    <p style="margin:10px 0 0;font-size:.88rem">{{ icone_pin() }} {{ p.vendedor_feira }} — {{ p.vendedor_endereco }}, {{ p.vendedor_cidade }}</p>
+  </section>
+</div>
+
+<section class="bloco" id="avaliacoes" style="margin-top:20px">
+  <h2>Opiniões sobre o produto</h2>
+  <div class="resumo-notas">
+    <div style="text-align:center"><div class="grande">{{ p.nota_media }}</div>{{ estrelas(p.nota_media, true) }}<div style="font-size:.8rem;color:var(--texto-suave);margin-top:4px">{{ p.total_avaliacoes }} avaliações</div></div>
+    <div style="display:grid;gap:4px;max-width:340px">
+      {% for n, qtd in distribuicao.items() %}
+      <div class="barra-nota"><span>{{ n }} ★</span><span class="b"><span style="width:{{ (qtd / p.total_avaliacoes * 100) if p.total_avaliacoes else 0 }}%"></span></span><span>{{ qtd }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if usuario and usuario.papel == 'cliente' %}
+  <form method="post" action="{{ url_for('loja.avaliar', produto_id=p.id) }}" class="painel-branco form-avaliacao">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <b>{{ 'Atualize a sua avaliação' if minha else 'Avalie este produto' }}</b>
+    <div class="estrelas-escolha" role="radiogroup" aria-label="Classificação">
+      {% for n in range(1, 6) %}
+      <input type="radio" id="n{{ n }}" name="nota" value="{{ n }}" required {{ 'checked' if minha and minha.nota == n }}>
+      <label for="n{{ n }}"><span class="e" aria-hidden="true">{{ '★' * n }}</span><span>{{ NOTAS[n] }}</span></label>
+      {% endfor %}
+    </div>
+    <div class="campo"><label for="av-com">Comentário</label><textarea id="av-com" name="comentario" rows="3" maxlength="800" placeholder="Como estava o produto? A entrega foi boa?">{{ minha.comentario if minha else '' }}</textarea></div>
+    <button class="btn btn-verde">{{ 'Atualizar avaliação' if minha else 'Publicar avaliação' }}</button>
+  </form>
+  {% elif not usuario %}
+  <p class="aviso-login"><a class="link" href="{{ url_for('auth.entrar', proximo=request.path ~ '#avaliacoes') }}">Entre</a> ou <a class="link" href="{{ url_for('auth.cadastro_cliente') }}">crie sua conta de cliente</a> para comentar e dar estrelas.</p>
+  {% endif %}
+
+  {% for a in avaliacoes %}
+  <article class="avaliacao">
+    <div class="topo"><span class="quem">{{ avatar(a.nome, a.foto, 32) }} <b style="color:var(--texto)">{{ a.nome.split()[0] }} {{ a.nome.split()[-1][:1] }}.</b> {{ estrelas(a.nota) }} {{ estrelas_rotulo(a.nota) }}</span><span>{{ (a.atualizado_em or a.criado_em)|data_br(false) }}</span></div>
+    {% if a.comentario %}<p>{{ a.comentario }}</p>{% endif %}
+  </article>
+  {% else %}
+  <p style="color:var(--texto-suave)">Ainda não há avaliações. Seja o primeiro!</p>
+  {% endfor %}
+</section>
+{% endblock %}
+
+{% block rodape_similares %}
+{{ rodape_similares(similares, "Produtos similares à venda", "Opções parecidas com " ~ p.nome ~ " em várias faixas de preço") }}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+<script src="{{ url_for('static', filename='js/mapa.js') }}"></script>
+<script src="{{ url_for('static', filename='js/galeria.js') }}"></script>
+{% endblock %}

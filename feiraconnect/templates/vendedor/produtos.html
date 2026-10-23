@@ -1,0 +1,30 @@
+{% extends "vendedor/base.html" %}
+{% block titulo %}Produtos{% endblock %}
+{% block conteudo %}
+<div class="adm-topo"><h1>Produtos e fotos</h1><a class="btn btn-verde" href="{{ url_for('vendedor.produto_form') }}">+ Cadastrar produto</a></div>
+<div class="tabela-wrap">
+<table class="tabela">
+  <thead><tr><th></th><th>Produto</th><th>Preço</th><th>Estoque</th><th>Fotos</th><th>Visualizações</th><th>Avaliação</th><th>Ações</th></tr></thead>
+  <tbody>
+  {% for p in produtos %}
+  <tr style="{{ 'opacity:.55' if not p.ativo }}">
+    <td><img class="mini" src="{{ url_for('static', filename=p.capa or 'img/produtos/padrao.svg') }}" alt=""></td>
+    <td><b>{{ p.nome }}</b><br><small style="color:var(--texto-suave)">{{ p.categoria_nome or 'Sem categoria' }} · {{ p.origem }}</small>
+      <br>{% if p.promocao_dia %}<span class="tag laranja">Oferta do dia</span>{% endif %}{% if p.fim_de_feira %}<span class="tag">Fim de feira</span>{% endif %}{% if not p.ativo %}<span class="tag vermelho">Oculto</span>{% endif %}</td>
+    <td>{% if p.preco_original %}<small class="preco-antigo">{{ p.preco_original|brl }}</small><br>{% endif %}<b>{{ p.preco|brl }}</b>/{{ p.unidade }}</td>
+    <td><span class="tag {{ 'vermelho' if p.estoque == 0 else ('laranja' if p.estoque <= 5 else 'verde') }}">{{ p.estoque }}</span>
+      <form class="mini-form" method="post" action="{{ url_for('vendedor.produto_estoque', produto_id=p.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="number" name="ajuste" placeholder="±" aria-label="Entrada ou saída de estoque"><button class="btn btn-claro btn-peq">OK</button></form></td>
+    <td>{{ p.total_imagens }}/10</td>
+    <td>👁 {{ p.visualizacoes }}</td>
+    <td>⭐ {{ p.nota_media }} <small>({{ p.total_avaliacoes }})</small></td>
+    <td class="acoes">
+      <a class="btn btn-claro btn-peq" href="{{ url_for('vendedor.produto_form', produto_id=p.id) }}">Editar e fotos</a>
+      <form method="post" action="{{ url_for('vendedor.produto_excluir', produto_id=p.id) }}" data-confirmar="Excluir {{ p.nome }}?"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-del btn-peq">Excluir</button></form>
+    </td>
+  </tr>
+  {% else %}<tr><td colspan="8">Você ainda não cadastrou produtos. <a class="link" href="{{ url_for('vendedor.produto_form') }}">Cadastrar o primeiro</a></td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+<script>document.querySelectorAll("[data-confirmar]").forEach(f => f.addEventListener("submit", e => { if (!confirm(f.dataset.confirmar)) e.preventDefault(); }));</script>
+{% endblock %}

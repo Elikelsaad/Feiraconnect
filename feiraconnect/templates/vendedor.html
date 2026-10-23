@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card, estrelas, icone_pin, avatar %}
+{% block titulo %}{{ v.banca }} | {{ cfg.loja_nome }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">{% endblock %}
+{% block conteudo %}
+<div class="produto-baixo" style="margin-top:18px">
+  <section class="bloco" style="display:flex;gap:18px;align-items:flex-start">
+    {{ avatar(v.nome, v.foto, 96) }}
+    <div>
+      <h1 style="font-size:1.5rem">{{ v.banca }}</h1>
+      <p style="margin:4px 0;color:var(--texto-suave)">Feirante: <b style="color:var(--texto)">{{ v.nome }}</b> · {{ v.feira }}</p>
+      <p class="nota-linha" style="font-size:.9rem">{{ estrelas(v.nota_media, true) }} <b>{{ v.nota_media }}</b> · +{{ v.total_vendidos }} vendas</p>
+      <p style="margin:10px 0 6px">{{ v.descricao }}</p>
+      <p style="margin:0;font-size:.9rem">{{ icone_pin() }} {{ v.endereco }}, {{ v.cidade }}
+        {% if distancia %}<span class="dist">{{ '%.1f'|format(distancia)|replace('.', ',') }} km de você</span>{% endif %}</p>
+      {% if v.telefone %}<p style="margin:6px 0 0;font-size:.9rem">📞 {{ v.telefone }}</p>{% endif %}
+    </div>
+  </section>
+  <section class="bloco">
+    <div id="mapa" class="mapa" data-lat="{{ v.lat }}" data-lng="{{ v.lng }}" data-nome="{{ v.banca }}"
+         {% if local %}data-clat="{{ local.lat }}" data-clng="{{ local.lng }}"{% endif %}></div>
+  </section>
+</div>
+<section class="secao">
+  <div class="secao-topo"><h2>Produtos desta banca</h2></div>
+  <div class="grade">{% for p in produtos %}{{ card(p) }}{% endfor %}</div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+<script src="{{ url_for('static', filename='js/mapa.js') }}"></script>
+{% endblock %}

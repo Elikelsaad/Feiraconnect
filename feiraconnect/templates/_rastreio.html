@@ -1,0 +1,8 @@
+{# Mapa de acompanhamento da entrega em tempo real. Variáveis: ped #}
+<section class="bloco rastreio" id="rastreio">
+  <h2>Acompanhar a entrega</h2>
+  <p class="rastreio-status"><span class="pulse"></span> <b data-rastreio-status>{{ STATUS_PEDIDO[ped.status] }}</b> · <span data-rastreio-info>{{ 'Aguardando o entregador sair da banca.' if ped.status != 'saiu_entrega' else 'Buscando a posição do entregador…' }}</span></p>
+  <div class="mapa mapa-rastreio" data-rastreio="{{ url_for('api.rastreio', codigo=ped.codigo) }}"
+       data-lat="{{ ped.origem_lat }}" data-lng="{{ ped.origem_lng }}" data-dlat="{{ ped.destino_lat }}" data-dlng="{{ ped.destino_lng }}"></div>
+  <p class="legenda-mapa"><span class="ponto verde"></span> Banca <span class="ponto laranja"></span> Destino <span class="ponto azul"></span> Entregador</p>
+</section>

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titulo %}Compra {{ codigo }} | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+<section class="bloco sucesso" style="margin-top:18px">
+  <div class="check">✓</div>
+  <h1 style="font-size:1.5rem">Compra registrada!</h1>
+  <p style="color:var(--texto-suave)">Compra <b>#{{ codigo }}</b> · {{ blocos|length }} pedido(s) · total {{ total|brl }}.
+    Você pode cancelar em até {{ cfg.cancelamento_minutos }} minutos.</p>
+</section>
+{% for b in blocos %}
+<section class="bloco" style="margin-top:14px">
+  <div class="adm-topo" style="margin-bottom:6px"><h2 style="margin:0">{{ b.ped.banca }} · pedido #{{ b.ped.codigo }}</h2>
+    <span class="status-chip {{ b.ped.status }}">{{ STATUS_PEDIDO[b.ped.status] }}</span></div>
+  <p style="margin:0 0 10px;color:var(--texto-suave)">{% for i in b.itens %}{{ i.quantidade }}× {{ i.nome }}{{ ', ' if not loop.last }}{% endfor %} · {{ MODOS_ENTREGA[b.ped.entrega_modo].nome }} · <b>{{ b.ped.total|brl }}</b></p>
+  {% if b.qr %}
+  <div class="pix-box">
+    <img class="qr" src="data:image/png;base64,{{ b.qr }}" alt="QR Code PIX de {{ b.ped.total|brl }}" width="220" height="220">
+    <div>
+      <span class="pix-logo" style="font-size:1.2rem">PIX</span>
+      <h3 style="font-size:1.5rem;margin:2px 0 8px">{{ b.pag.valor|brl }}</h3>
+      <p class="sub" style="margin:0 0 8px">Pagamento direto para {{ b.ped.banca }}. Abra o app do banco → PIX → Ler QR Code ou Copia e Cola.</p>
+      <div class="copia-cola"><input id="pix-{{ b.ped.id }}" readonly value="{{ b.pag.pix_payload }}"><button class="btn btn-verde btn-peq" type="button" data-copiar="#pix-{{ b.ped.id }}">Copiar</button></div>
+    </div>
+  </div>
+  {% elif b.pag and b.pag.status == 'aprovado' %}
+  <p class="flash ok">Pagamento aprovado · {{ MODALIDADES[b.pag.modalidade] }} {{ b.pag.bandeira }}{% if b.pag.cartao_final %} •••• {{ b.pag.cartao_final }}{% endif %}{% if b.pag.parcelas > 1 %} em {{ b.pag.parcelas }}x{% endif %}. O feirante foi avisado.</p>
+  {% endif %}
+  <a class="btn btn-claro btn-peq" href="{{ url_for('cliente.pedido', codigo=b.ped.codigo) }}">Acompanhar este pedido</a>
+</section>
+{% endfor %}
+{% endblock %}

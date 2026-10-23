@@ -1,0 +1,48 @@
+{% extends "vendedor/base.html" %}
+{% block titulo %}Conta bancária{% endblock %}
+{% block conteudo %}
+<div class="adm-topo"><h1>Conta bancária para recebimento</h1></div>
+<form method="post" class="bloco">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <p class="sub" style="margin-top:0">Os pagamentos das suas vendas (PIX, crédito e débito) vão para esta conta. Os dados só aparecem para você.</p>
+  <fieldset class="grupo-form"><legend>Dados bancários</legend>
+  <div class="form-grid">
+    <div class="campo"><label for="banco_codigo">Banco *</label><select id="banco_codigo" name="banco_codigo" required>
+      <option value="">Escolha…</option>
+      {% for cod, nome in bancos %}<option value="{{ cod }}" {{ 'selected' if c.banco_codigo == cod }}>{{ cod }} · {{ nome }}</option>{% endfor %}</select></div>
+    <div class="campo"><label for="banco_outro">Nome do banco (se escolheu "Outro")</label><input id="banco_outro" name="banco_outro" value="{{ c.banco_nome if c.banco_codigo == '000' else '' }}"></div>
+    <div class="campo"><label for="agencia">Agência (sem dígito) *</label><input id="agencia" name="agencia" required inputmode="numeric" maxlength="6" value="{{ c.agencia or '' }}"></div>
+    <div class="campo" style="display:grid;grid-template-columns:1fr 80px;gap:8px">
+      <div><label for="conta">Conta *</label><input id="conta" name="conta" required inputmode="numeric" maxlength="14" value="{{ c.conta or '' }}"></div>
+      <div><label for="conta_digito">Dígito</label><input id="conta_digito" name="conta_digito" maxlength="2" value="{{ c.conta_digito or '' }}"></div></div>
+    <div class="campo"><label for="conta_tipo">Tipo de conta *</label><select id="conta_tipo" name="conta_tipo">
+      {% for v, n in [('corrente','Conta corrente'),('poupanca','Poupança'),('pagamento','Conta de pagamento')] %}<option value="{{ v }}" {{ 'selected' if c.conta_tipo == v }}>{{ n }}</option>{% endfor %}</select></div>
+    <div class="campo"><label for="titular">Nome do titular *</label><input id="titular" name="titular" required value="{{ c.titular or '' }}"></div>
+    <div class="campo"><label for="titular_documento">CPF ou CNPJ do titular *</label><input id="titular_documento" name="titular_documento" required inputmode="numeric" value="{{ c.titular_documento or '' }}"></div>
+  </div></fieldset>
+
+  <fieldset class="grupo-form"><legend>Formas de pagamento que você aceita</legend>
+    <div class="check-linha">
+      <label><input type="checkbox" name="aceita_pix" {{ 'checked' if c.aceita_pix }}> PIX</label>
+      <label><input type="checkbox" name="aceita_credito" {{ 'checked' if c.aceita_credito }}> Cartão de crédito</label>
+      <label><input type="checkbox" name="aceita_debito" {{ 'checked' if c.aceita_debito }}> Cartão de débito</label>
+    </div>
+    <p class="sub" style="margin:0 0 6px">Bandeiras aceitas no crédito e no débito:</p>
+    <div class="check-linha">
+      <label><input type="checkbox" name="bandeira_visa" {{ 'checked' if c.bandeira_visa }}> <span class="bandeira b-visa">Visa</span></label>
+      <label><input type="checkbox" name="bandeira_mastercard" {{ 'checked' if c.bandeira_mastercard }}> <span class="bandeira b-mastercard">Mastercard</span></label>
+      <label><input type="checkbox" name="bandeira_elo" {{ 'checked' if c.bandeira_elo }}> <span class="bandeira b-elo">Elo</span></label>
+    </div>
+  </fieldset>
+
+  <fieldset class="grupo-form"><legend>Chave PIX</legend>
+    <div class="form-grid">
+      <div class="campo"><label for="pix_tipo">Tipo da chave</label><select id="pix_tipo" name="pix_tipo">
+        {% for v, n in [('cpf_cnpj','CPF ou CNPJ'),('celular','Celular'),('email','E-mail'),('aleatoria','Chave aleatória')] %}<option value="{{ v }}" {{ 'selected' if c.pix_tipo == v }}>{{ n }}</option>{% endfor %}</select></div>
+      <div class="campo"><label for="pix_chave">Chave PIX</label><input id="pix_chave" name="pix_chave" value="{{ c.pix_chave or '' }}"><small>O QR Code de cada venda é gerado com esta chave e com o valor exato do pedido.</small></div>
+    </div>
+  </fieldset>
+  <button class="btn btn-verde">Salvar conta bancária</button>
+  {% if c.atualizado_em %}<small style="margin-left:10px;color:var(--texto-suave)">Atualizada em {{ c.atualizado_em|data_br }}</small>{% endif %}
+</form>
+{% endblock %}

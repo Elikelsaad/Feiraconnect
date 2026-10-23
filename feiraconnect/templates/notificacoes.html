@@ -1,0 +1,16 @@
+{% extends base %}
+{% block titulo %}Avisos{% endblock %}
+{% block conteudo %}
+<section class="bloco" style="margin-top:18px">
+  <h2>Avisos</h2>
+  {% for n in notificacoes %}
+  <a class="notif {{ n.tipo }}{{ ' nova' if not n.lida }}" href="{{ n.link or '#' }}">
+    <span class="notif-titulo">{{ n.titulo }}</span>
+    {% if n.mensagem %}<span class="notif-msg">{{ n.mensagem }}</span>{% endif %}
+    <small>{{ n.criado_em|data_br }}</small>
+  </a>
+  {% else %}
+  <p style="color:var(--texto-suave)">Nenhum aviso ainda.</p>
+  {% endfor %}
+</section>
+{% endblock %}

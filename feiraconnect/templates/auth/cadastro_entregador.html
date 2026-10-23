@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titulo %}Cadastro de entregador | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+<form method="post" enctype="multipart/form-data" class="bloco form-cadastro" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <h1>Cadastro de entregador</h1>
+  <p class="sub">Receba entregas das bancas e compartilhe o trajeto pelo GPS com o cliente e o vendedor.</p>
+  {% set doc_rotulo = "CPF" %}{% include "auth/_pessoais.html" %}
+  <fieldset class="grupo-form">
+    <legend>Veículo</legend>
+    <div class="opcoes">
+      {% for v, nome in [('moto','Moto'),('carro','Carro'),('bicicleta','Bicicleta')] %}
+      <div class="opcao"><input type="radio" name="veiculo" id="v-{{ v }}" value="{{ v }}" {{ 'checked' if (f.get('veiculo') or 'moto') == v }}>
+        <label for="v-{{ v }}"><img src="{{ url_for('static', filename='img/ui-' ~ {'moto':'moto','carro':'carro','bicicleta':'bike'}[v] ~ '.svg') }}" alt=""><strong>{{ nome }}</strong></label></div>
+      {% endfor %}
+    </div>
+    <div class="campo" style="max-width:220px;margin-top:12px"><label for="placa">Placa (moto ou carro)</label><input id="placa" name="placa" maxlength="8" value="{{ f.get('placa','') }}"></div>
+  </fieldset>
+  {% include "auth/_acesso.html" %}
+  <button class="btn btn-verde">Criar conta de entregador</button>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/cadastro.js') }}"></script>{% endblock %}

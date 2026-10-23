@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar %}
+{% block titulo %}Pedido {{ ped.codigo }} | {{ cfg.loja_nome }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">{% endblock %}
+{% block conteudo %}
+{% set etapas = ['aguardando_pagamento','pago','em_preparo','aguardando_entregador','saiu_entrega','entregue'] if ped.entrega_modo != 'retirada' else ['aguardando_pagamento','pago','em_preparo','entregue'] %}
+{% set idx = etapas.index(ped.status) if ped.status in etapas else -1 %}
+{% include "cliente/_menu.html" %}
+<div class="dois-col">
+  <div>
+    <section class="bloco">
+      <div class="adm-topo" style="margin-bottom:4px"><h1 style="font-size:1.35rem;margin:0">Pedido #{{ ped.codigo }}</h1><span class="status-chip {{ ped.status }}">{{ STATUS_PEDIDO[ped.status] }}</span></div>
+      <p class="sub" style="margin:0">{{ banca.ponto_comercial }} · {{ banca.feira }} · feito em {{ ped.criado_em|data_br }}</p>
+      {% if ped.status != 'cancelado' %}
+      <div class="linha-tempo" aria-label="Andamento">
+        {% for e in etapas %}<div class="p{{ ' feito' if loop.index0 <= idx }}"><div class="bola">{{ '✓' if loop.index0 <= idx else loop.index }}</div>{{ STATUS_PEDIDO[e] }}</div>{% endfor %}
+      </div>
+      {% else %}
+      <p class="flash erro">Cancelado {{ 'por você' if ped.cancelado_por == 'cliente' else 'pelo feirante' }} em {{ ped.cancelado_em|data_br }}{% if ped.motivo_cancelamento %} · {{ ped.motivo_cancelamento }}{% endif %}.</p>
+      {% endif %}
+    </section>
+
+    {% if qr and ped.status == 'aguardando_pagamento' %}
+    <section class="bloco" style="margin-top:14px">
+      <div class="pix-box">
+        <img class="qr" src="data:image/png;base64,{{ qr }}" alt="QR Code PIX de {{ pag.valor|brl }}" width="220" height="220">
+        <div><span class="pix-logo" style="font-size:1.2rem">PIX</span><h3 style="font-size:1.5rem;margin:2px 0 8px">{{ pag.valor|brl }}</h3>
+          <div class="copia-cola"><input id="pix-cc" readonly value="{{ pag.pix_payload }}"><button class="btn btn-verde btn-peq" type="button" data-copiar="#pix-cc">Copiar</button></div>
+          {% if modo_teste %}<form method="post" style="margin-top:10px"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-claro btn-peq" name="acao" value="simular_pix">Simular pagamento (modo de teste)</button></form>{% endif %}
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if ped.entrega_modo != 'retirada' and ped.status in ('aguardando_entregador','saiu_entrega','entregue') %}
+    <div style="margin-top:14px">{% include "_rastreio.html" %}</div>
+    {% endif %}
+
+    <section class="bloco" style="margin-top:14px">
+      <h2>Produtos</h2>
+      {% for i in itens %}
+      <div class="item-carrinho" style="grid-template-columns:56px 1fr auto">
+        <img src="{{ url_for('static', filename=i.capa or 'img/produtos/padrao.svg') }}" alt="" style="width:56px;height:56px">
+        <div><a class="nome" href="{{ url_for('loja.produto', produto_id=i.produto_id) }}">{{ i.nome }}</a><small>{{ i.quantidade }} × {{ i.preco|brl }}</small>
+          {% if ped.status == 'entregue' %}<a class="link" style="font-size:.85rem" href="{{ url_for('loja.produto', produto_id=i.produto_id) }}#avaliacoes">Avaliar ★</a>{% endif %}</div>
+        <span class="total">{{ (i.preco * i.quantidade)|brl }}</span>
+      </div>
+      {% endfor %}
+    </section>
+  </div>
+
+  <aside class="bloco resumo">
+    <h2>Resumo</h2>
+    <div class="linha"><span>Produtos</span><span>{{ ped.subtotal|brl }}</span></div>
+    <div class="linha"><span>Entrega ({{ MODOS_ENTREGA[ped.entrega_modo].nome }})</span><span>{{ 'Grátis' if ped.entrega_valor == 0 else ped.entrega_valor|brl }}</span></div>
+    <div class="linha total"><span>Total</span><span>{{ ped.total|brl }}</span></div>
+    {% if pag %}<p style="font-size:.85rem;margin:10px 0 0"><b>Pagamento:</b> {{ MODALIDADES[pag.modalidade] }} {{ pag.bandeira }}{% if pag.cartao_final %} •••• {{ pag.cartao_final }}{% endif %}{% if pag.parcelas > 1 %} em {{ pag.parcelas }}x{% endif %} · {{ {'aprovado':'aprovado','pendente':'aguardando','estornado':'estornado','recusado':'não realizado'}[pag.status] }}</p>{% endif %}
+    <p style="font-size:.85rem"><b>Entrega:</b> {{ ped.endereco }}{% if ped.referencia %} · {{ ped.referencia }}{% endif %}</p>
+    {% if entregador %}<div class="pessoa">{{ avatar(entregador.nome_completo, entregador.foto, 40) }}<div><b>{{ entregador.nome_completo.split()[0] }}</b> · seu entregador<br><small>{{ entregador.veiculo|capitalize }} {{ entregador.placa }}</small></div></div>{% endif %}
+
+    {% if pode_cancelar %}
+    <form method="post" class="cancelar-box" data-limite="{{ limite_iso }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <p><b>Mudou de ideia?</b> Você ainda pode cancelar por <b data-restante>--:--</b>.</p>
+      <input name="motivo" placeholder="Motivo (opcional)" maxlength="300" aria-label="Motivo do cancelamento">
+      <button class="btn btn-del btn-bloco" name="acao" value="cancelar" data-confirmar="Cancelar esta compra?">Cancelar compra</button>
+    </form>
+    {% elif ped.status not in ('cancelado','entregue') %}
+    <p class="sub" style="font-size:.8rem">O prazo de {{ cfg.cancelamento_minutos }} minutos para cancelar já terminou. Fale com a banca: {{ banca.celular }}.</p>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+<script src="{{ url_for('static', filename='js/rastreio.js') }}"></script>
+<script>
+(function () {
+  const box = document.querySelector("[data-limite]"); if (!box) return;
+  const fim = new Date(box.dataset.limite).getTime(), el = box.querySelector("[data-restante]");
+  const t = () => { const s = Math.max(0, Math.floor((fim - Date.now()) / 1000));
+    el.textContent = String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+    if (!s) { box.querySelector("button").disabled = true; el.textContent = "00:00 (prazo encerrado)"; clearInterval(h); } };
+  const h = setInterval(t, 1000); t();
+  box.querySelector("[data-confirmar]").addEventListener("click", e => { if (!confirm(e.target.dataset.confirmar)) e.preventDefault(); });
+  // atualiza a página quando o status muda (ex.: pagamento confirmado)
+  document.addEventListener("fc:notificacao", () => setTimeout(() => location.reload(), 1200));
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% from "_macros.html" import icone_pin, icone_cat %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}{{ cfg.loja_nome }} — {{ cfg.loja_slogan }}{% endblock %}</title>
+  <meta name="description" content="Compre frutas, verduras, peixes e produtos regionais direto dos feirantes, com entrega de moto, carro ou bicicleta.">
+  <meta name="theme-color" content="#2E7D32">
+  <link rel="icon" href="{{ url_for('static', filename='img/ui-folha.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fonts/fonts.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+  <script>try{var s=JSON.parse(localStorage.getItem('fc_a11y')||'{}');if(s.contraste)document.documentElement.classList.add('alto-contraste');if(s.fonte)document.documentElement.style.fontSize=s.fonte+'px';}catch(e){}</script>
+</head>
+<body>
+<a class="sr-only" href="#conteudo">Pular para o conteúdo</a>
+
+<!-- Aviso de promoções do dia -->
+<div class="promo-bar" role="region" aria-label="Promoções do dia">
+  <div class="container">
+    <img src="{{ url_for('static', filename='img/ui-fogo.svg') }}" alt="">
+    <div class="ticker"><span>{{ cfg.aviso_promocao }} &nbsp;•&nbsp; Pague com PIX, crédito ou débito &nbsp;•&nbsp; Entregas de moto, carro e bicicleta</span></div>
+    <span class="contador" data-contador title="Tempo até o fim das promoções de hoje">--:--:--</span>
+    <div class="a11y" aria-label="Acessibilidade">
+      <button type="button" data-fonte="-1" aria-label="Diminuir letra">A-</button>
+      <button type="button" data-fonte="1" aria-label="Aumentar letra">A+</button>
+      <button type="button" data-contraste aria-label="Alto contraste">◐ Contraste</button>
+    </div>
+  </div>
+</div>
+
+<header class="header">
+  <div class="container">
+    <div class="header-top">
+      <a class="logo" href="{{ url_for('loja.inicio') }}" aria-label="{{ cfg.loja_nome }} — página inicial">
+        <span class="logo-marca"><img src="{{ url_for('static', filename='img/ui-folha.svg') }}" alt=""></span>
+        <span>{{ cfg.loja_nome }}<small>{{ cfg.loja_slogan }}</small></span>
+      </a>
+      <form class="busca" action="{{ url_for('loja.busca') }}" role="search">
+        <label class="sr-only" for="q">Buscar produtos</label>
+        <input id="q" name="q" placeholder="Buscar açaí, tambaqui, farinha, feirante..." value="{{ q or '' }}" autocomplete="off">
+        <button aria-label="Buscar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+      </form>
+      <nav class="header-acoes" aria-label="Conta">
+        {% include "_conta.html" %}
+        <a class="carrinho-btn" href="{{ url_for('loja.carrinho') }}" aria-label="Carrinho com {{ qtd_carrinho }} itens">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 7H6"/></svg>
+          {% if qtd_carrinho %}<span class="badge">{{ qtd_carrinho }}</span>{% endif %}
+        </a>
+      </nav>
+    </div>
+    <div class="header-bottom">
+      <button class="local-btn" type="button" data-abrir-gps>
+        {{ icone_pin('#fff', 22) }}
+        <span><small>Entregar em</small><strong data-endereco-curto>{{ (local.curto or local.endereco) if local else 'Ativar localização (GPS)' }}</strong></span>
+      </button>
+        <div class="menu-cat">
+          <button type="button" aria-haspopup="true">Categorias <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="dropdown"><ul>
+            {% for c in categorias_menu %}<li><a href="{{ url_for('loja.busca', categoria=c.slug) }}">{{ icone_cat(c) }} {{ c.nome }}</a></li>{% endfor %}
+          </ul></div>
+        </div>
+      <nav class="nav" aria-label="Menu principal">
+        <a class="destaque" href="{{ url_for('loja.busca', filtro='promocao') }}">Ofertas do dia</a>
+        <a href="{{ url_for('loja.busca', filtro='sobras') }}">Sobras de fim de feira</a>
+        <a href="{{ url_for('loja.inicio') }}#feirantes">Feirantes perto de você</a>
+        <a href="{{ url_for('loja.busca', ordem='avaliacao') }}">Mais bem avaliados</a>
+        <a href="{{ url_for('loja.busca', ordem='menor_preco') }}">Menores preços</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main id="conteudo">
+  <div class="container">
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% if msgs %}<div class="flashes" role="status">{% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}</div>{% endif %}
+    {% endwith %}
+    {% block conteudo %}{% endblock %}
+  </div>
+  {% block rodape_similares %}{% endblock %}
+</main>
+
+<footer class="rodape">
+  <div class="container">
+    <div class="rodape-grid">
+      <div>
+        <h4>{{ cfg.loja_nome }}</h4>
+        <p>Plataforma que conecta feirantes e clientes, ajudando no controle de estoque e na redução do desperdício de alimentos nas feiras livres.</p>
+        <div class="selo-ods"><img src="{{ url_for('static', filename='img/ui-folha.svg') }}" width="22" alt=""> Alinhado ao ODS 12 — Consumo e produção responsáveis</div>
+      </div>
+      <div>
+        <h4>Comprar</h4>
+        <ul>
+          <li><a href="{{ url_for('loja.busca', filtro='promocao') }}">Ofertas do dia</a></li>
+          <li><a href="{{ url_for('loja.busca', filtro='sobras') }}">Sobras de fim de feira</a></li>
+          {% for c in categorias_menu[:4] %}<li><a href="{{ url_for('loja.busca', categoria=c.slug) }}">{{ c.nome }}</a></li>{% endfor %}
+        </ul>
+      </div>
+      <div>
+        <h4>Pagamento e entrega</h4>
+        <ul>
+          <li>PIX com QR Code</li>
+          <li>Cartão de crédito em até {{ cfg.parcelas_max }}x</li>
+          <li>Cartão de débito</li>
+          <li>Entrega de moto, carro ou bicicleta</li>
+          <li>Retirada na banca</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Para feirantes</h4>
+        <ul>
+          <li><a href="{{ url_for('auth.cadastro_vendedor') }}">Quero vender no {{ cfg.loja_nome }}</a></li>
+          <li><a href="{{ url_for('auth.cadastro_entregador') }}">Quero ser entregador</a></li>
+          <li><a href="{{ url_for('auth.cadastro_cliente') }}">Criar conta de cliente</a></li>
+          <li><a href="{{ url_for('auth.entrar') }}">Entrar</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="base">
+      <span>© {{ ano }} {{ cfg.loja_nome }} — Projeto TCC FAMETRO. Todos os direitos reservados.</span>
+      <span>Versão {{ VERSAO }} · Python + Flask + SQL</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Modal de localização por GPS -->
+<div class="modal" id="modal-gps" role="dialog" aria-modal="true" aria-labelledby="gps-titulo">
+  <div class="modal-caixa">
+    <button class="modal-fechar" type="button" data-fechar aria-label="Fechar">✕</button>
+    <h2 id="gps-titulo">Onde você quer receber?</h2>
+    <p style="margin:0;color:var(--texto-suave);font-size:.9rem">Usamos o GPS do seu aparelho para mostrar o endereço completo, as promoções mais perto e calcular o frete de moto, carro ou bicicleta.</p>
+    <div class="gps-status{{ ' ok' if local }}" data-gps-status>
+      {% if local %}<b>Endereço atual:</b><br>{{ local.endereco }}{% else %}Nenhuma localização definida ainda.{% endif %}
+    </div>
+    <button class="btn btn-verde btn-bloco" type="button" data-usar-gps>{{ icone_pin('#fff', 18) }} Usar minha localização (GPS)</button>
+    <p style="text-align:center;color:var(--texto-suave);font-size:.82rem;margin:12px 0">ou digite o endereço</p>
+    <form data-endereco-manual class="gps-linha">
+      <div class="campo" style="margin:0"><label for="end-manual" class="sr-only">Endereço</label><input id="end-manual" placeholder="Rua, número, bairro, cidade"></div>
+      <button class="btn btn-borda">Buscar</button>
+    </form>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script>window.FC = { csrf: "{{ csrf_token }}", apiLocal: "{{ url_for('loja.salvar_localizacao') }}", temLocal: {{ 'true' if local else 'false' }}, apiNotif: "{{ url_for('api.notificacoes') }}" };</script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% if usuario %}<script src="{{ url_for('static', filename='js/notificacoes.js') }}"></script>{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

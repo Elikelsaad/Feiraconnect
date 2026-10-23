@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titulo %}Criar conta | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+<section style="margin-top:22px">
+  <h1 style="font-size:1.6rem">Como você quer usar o {{ cfg.loja_nome }}?</h1>
+  <p style="color:var(--texto-suave);margin:4px 0 18px">Cada tipo de conta tem o seu próprio painel.</p>
+  <div class="tipos-conta">
+    <a class="tipo-conta" href="{{ url_for('auth.cadastro_cliente') }}">
+      <img src="{{ url_for('static', filename='img/produtos/cesta.svg') }}" alt="">
+      <h2>Cliente</h2><p>Compre da feira com entrega, pague com PIX ou cartão, acompanhe a entrega no mapa e avalie os produtos.</p>
+      <span class="btn btn-verde">Criar conta de cliente</span></a>
+    <a class="tipo-conta" href="{{ url_for('auth.cadastro_vendedor') }}">
+      <img src="{{ url_for('static', filename='img/ui-banca.svg') }}" alt="">
+      <h2>Vendedor</h2><p>Venda os produtos da sua banca com até 10 fotos cada, receba na sua conta e acompanhe as vendas em tempo real.</p>
+      <span class="btn btn-terra">Quero vender</span></a>
+    <a class="tipo-conta" href="{{ url_for('auth.cadastro_entregador') }}">
+      <img src="{{ url_for('static', filename='img/ui-moto.svg') }}" alt="">
+      <h2>Entregador</h2><p>Faça entregas de moto, carro ou bicicleta e compartilhe o trajeto pelo GPS.</p>
+      <span class="btn btn-borda">Quero entregar</span></a>
+  </div>
+  <p style="margin-top:18px">Já tem conta? <a class="link" href="{{ url_for('auth.entrar') }}">Entrar</a></p>
+</section>
+{% endblock %}

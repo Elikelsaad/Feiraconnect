@@ -1,0 +1,72 @@
+{# ===== Componentes reutilizáveis (estrelas, preço, card de produto, ícones) ===== #}
+
+{% macro estrelas(nota, grande=false) -%}
+<span class="estrelas{{ ' g' if grande }}" role="img" aria-label="{{ nota }} de 5 estrelas"><span style="width: {{ (nota or 0) / 5 * 100 }}%"></span></span>
+{%- endmacro %}
+
+{% macro preco(valor, desconto=0) -%}
+{% set r, c = partes_preco(valor) %}
+<div class="preco"><span class="valor">R$ {{ r }}<sup>{{ c }}</sup></span>{% if desconto %}<span class="desc">{{ desconto }}% OFF</span>{% endif %}</div>
+{%- endmacro %}
+
+{% macro icone_pin(cor="currentColor", tam=14) -%}
+<svg width="{{ tam }}" height="{{ tam }}" viewBox="0 0 24 24" fill="none" stroke="{{ cor }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>
+{%- endmacro %}
+
+{% macro icone_cat(c) -%}
+{% if c.icone and (c.icone.endswith('.svg') or c.icone.endswith('.png')) %}<img src="{{ url_for('static', filename=c.icone) }}" alt="">{% else %}<span aria-hidden="true">{{ c.icone or '🧺' }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro card(p) -%}
+{% set d = desconto_pct(p) %}
+<a class="card" href="{{ url_for('loja.produto', produto_id=p.id) }}">
+  <div class="foto">
+    <img src="{{ url_for('static', filename=p.capa or 'img/produtos/padrao.svg') }}" alt="{{ p.nome }}" loading="lazy">
+    <div class="selos">
+      {% if p.fim_de_feira %}<span class="selo selo-sobra">Fim de feira</span>{% endif %}
+      {% if p.promocao_dia %}<span class="selo selo-promo">Oferta do dia</span>{% endif %}
+      {% if p.estoque <= 5 %}<span class="selo selo-baixo">Últimas {{ p.estoque }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="info">
+    <span class="nome">{{ p.nome }}</span>
+    {% if p.preco_original %}<span class="preco-antigo">R$ {{ '%.2f'|format(p.preco_original)|replace('.', ',') }}</span>{% endif %}
+    {{ preco(p.preco, d) }}
+    <span class="unidade">por {{ p.unidade }}</span>
+    <span class="nota-linha">{{ estrelas(p.nota_media) }} <span>{{ p.nota_media }} ({{ p.total_avaliacoes }})</span></span>
+    <span class="entrega">Entrega de moto, carro ou bike</span>
+    <span class="meta">{{ icone_pin() }} {{ p.origem }}</span>
+    <span class="vendedor">por <b>{{ p.vendedor_nome }}</b>{% if p.distancia %} · a {{ '%.1f'|format(p.distancia)|replace('.', ',') }} km{% endif %}</span>
+  </div>
+</a>
+{%- endmacro %}
+
+{% macro rodape_similares(produtos, titulo="Você também pode gostar", sub="Outros produtos da feira com preços para todos os bolsos") -%}
+{% if produtos %}
+<section class="similares-rodape" aria-label="{{ titulo }}">
+  <div class="container">
+    <h2>{{ titulo }}</h2>
+    <p class="sub">{{ sub }}</p>
+    <div class="faixas-preco">
+      <a href="{{ url_for('loja.busca', preco_max=5, ordem='menor_preco') }}">Até R$ 5</a>
+      <a href="{{ url_for('loja.busca', preco_max=10, ordem='menor_preco') }}">Até R$ 10</a>
+      <a href="{{ url_for('loja.busca', preco_max=20, ordem='menor_preco') }}">Até R$ 20</a>
+      <a href="{{ url_for('loja.busca', preco_max=50, ordem='menor_preco') }}">Até R$ 50</a>
+      <a href="{{ url_for('loja.busca', filtro='promocao') }}">Só promoções</a>
+      <a href="{{ url_for('loja.busca', filtro='sobras') }}">Sobras de fim de feira</a>
+    </div>
+    <div class="trilho">
+      {% for p in produtos %}{{ card(p) }}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{%- endmacro %}
+
+{% macro avatar(nome, foto, tam=54) -%}
+{% if foto %}<img class="avatar avatar-foto" src="{{ url_for('static', filename=foto) }}" alt="Foto de {{ nome }}" style="width:{{ tam }}px;height:{{ tam }}px">{% else %}<span class="avatar" style="width:{{ tam }}px;height:{{ tam }}px">{{ nome[:1] }}{{ nome.split(' ')[-1][:1] }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro estrelas_rotulo(nota) -%}
+<span class="nota-rotulo nota-{{ nota }}">{{ NOTAS[nota] }}</span>
+{%- endmacro %}

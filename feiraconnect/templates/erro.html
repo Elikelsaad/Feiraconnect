@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}{{ titulo }} | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+<div class="vazio painel-branco" style="margin-top:24px">
+  <img src="{{ url_for('static', filename='img/produtos/cesta.svg') }}" alt="">
+  <h1 style="font-size:1.5rem">{{ titulo }}</h1>
+  <p>{{ mensagem }}</p>
+  <a class="btn btn-verde" href="{{ url_for('loja.inicio') }}">Voltar para a loja</a>
+</div>
+{% endblock %}

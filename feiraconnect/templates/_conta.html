@@ -1,0 +1,35 @@
+{# Menu da conta no cabeçalho: entrar / cadastrar ou o usuário logado com avisos #}
+{% if usuario %}
+  {% set painel = {'vendedor': url_for('vendedor.painel'), 'cliente': url_for('cliente.pedidos'), 'entregador': url_for('entregador.painel')}[usuario.papel] %}
+  {% set notif = {'vendedor': url_for('vendedor.notificacoes'), 'cliente': url_for('cliente.notificacoes'), 'entregador': url_for('entregador.notificacoes')}[usuario.papel] %}
+  <a class="sino" href="{{ notif }}" aria-label="Avisos ({{ notif_nao_lidas }} novos)">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+    <span class="badge" data-notif-badge {{ 'hidden' if not notif_nao_lidas }}>{{ notif_nao_lidas }}</span>
+  </a>
+  <div class="conta-menu">
+    <button type="button" class="conta-btn" aria-haspopup="true">
+      <img src="{{ url_for('static', filename=usuario.foto) if usuario.foto else url_for('static', filename='img/ui-folha.svg') }}" alt="">
+      <span><small>{{ {'vendedor': 'Vendedor', 'cliente': 'Cliente', 'entregador': 'Entregador'}[usuario.papel] }}</small>{{ usuario.nome_completo.split()[0] }}</span>
+    </button>
+    <div class="dropdown dropdown-dir"><ul>
+      {% if usuario.papel == 'vendedor' %}
+        <li><a href="{{ url_for('vendedor.painel') }}">Dashboard de vendas</a></li>
+        <li><a href="{{ url_for('vendedor.produtos') }}">Meus produtos</a></li>
+        <li><a href="{{ url_for('vendedor.pedidos') }}">Pedidos</a></li>
+        <li><a href="{{ url_for('vendedor.financeiro') }}">Financeiro</a></li>
+        <li><a href="{{ url_for('vendedor.conta_bancaria') }}">Conta bancária</a></li>
+      {% elif usuario.papel == 'cliente' %}
+        <li><a href="{{ url_for('cliente.pedidos') }}">Minhas compras</a></li>
+        <li><a href="{{ url_for('cliente.cartoes') }}">Cartões</a></li>
+        <li><a href="{{ url_for('cliente.perfil') }}">Meus dados</a></li>
+      {% else %}
+        <li><a href="{{ url_for('entregador.painel') }}">Minhas entregas</a></li>
+      {% endif %}
+      <li><a href="{{ notif }}">Avisos</a></li>
+      <li><a href="{{ url_for('auth.sair') }}">Sair</a></li>
+    </ul></div>
+  </div>
+{% else %}
+  <a class="esconde-mob" href="{{ url_for('auth.escolher_cadastro') }}">Crie a sua conta</a>
+  <a href="{{ url_for('auth.entrar') }}">Entrar</a>
+{% endif %}

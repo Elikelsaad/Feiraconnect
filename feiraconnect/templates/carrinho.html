@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_macros.html" import rodape_similares %}
+{% block titulo %}Carrinho | {{ cfg.loja_nome }}{% endblock %}
+{% block conteudo %}
+{% if itens %}
+<div class="dois-col">
+  <section class="bloco">
+    <h2>Carrinho ({{ itens|length }} produto{{ 's' if itens|length > 1 }})</h2>
+    {% for i in itens %}
+    <div class="item-carrinho">
+      <img src="{{ url_for('static', filename=i.p.capa or 'img/produtos/padrao.svg') }}" alt="">
+      <div>
+        <a class="nome" href="{{ url_for('loja.produto', produto_id=i.p.id) }}">{{ i.p.nome }}</a>
+        <small>{{ i.p.vendedor_banca }} · {{ i.p.vendedor_feira }}</small>
+        <small>{{ i.p.preco|brl }} por {{ i.p.unidade }}</small>
+        <form method="post" action="{{ url_for('loja.carrinho_atualizar') }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="produto_id" value="{{ i.p.id }}">
+          <input type="hidden" name="quantidade" value="0">
+          <button class="link" style="background:none;border:0;padding:0;cursor:pointer;font-size:.85rem">Excluir</button>
+        </form>
+      </div>
+      <form method="post" action="{{ url_for('loja.carrinho_atualizar') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="produto_id" value="{{ i.p.id }}">
+        <div class="qtd-ctrl"><button type="button" data-passo="-1" aria-label="Menos">−</button><input name="quantidade" type="number" value="{{ i.qtd }}" min="0" max="{{ i.p.estoque }}" data-auto-submit aria-label="Quantidade"><button type="button" data-passo="1" aria-label="Mais">+</button></div>
+        <small style="display:block;text-align:center;color:var(--texto-suave);font-size:.74rem;margin-top:4px">{{ i.p.estoque }} disponíveis</small>
+      </form>
+      <span class="total">{{ i.total|brl }}</span>
+    </div>
+    {% endfor %}
+  </section>
+  <aside class="bloco resumo">
+    <h2>Resumo da compra</h2>
+    <div class="linha"><span>Produtos</span><span>{{ subtotal|brl }}</span></div>
+    <div class="linha total"><span>Total dos produtos</span><span>{{ subtotal|brl }}</span></div>
+    <p style="font-size:.8rem;color:var(--texto-suave)">A entrega (moto, carro, bicicleta ou retirada) e o pagamento são escolhidos na próxima etapa.
+      {% if n_vendedores > 1 %}<b>Seu carrinho tem produtos de {{ n_vendedores }} feirantes</b>: cada um envia o seu pedido e recebe o pagamento separadamente.{% endif %}</p>
+    {% if not usuario %}<p style="font-size:.85rem;background:var(--argila-clara);padding:10px;border-radius:8px">Para finalizar, entre ou crie sua conta de cliente.</p>{% endif %}
+    <a class="btn btn-verde btn-bloco" href="{{ url_for('loja.checkout') }}">Continuar a compra</a>
+    <a class="btn btn-claro btn-bloco" style="margin-top:8px" href="{{ url_for('loja.inicio') }}">Continuar comprando</a>
+  </aside>
+</div>
+{% else %}
+<div class="vazio painel-branco" style="margin-top:18px">
+  <img src="{{ url_for('static', filename='img/produtos/padrao.svg') }}" alt="">
+  <h2>Seu carrinho está vazio</h2>
+  <p>Que tal começar pelas ofertas do dia?</p>
+  <a class="btn btn-verde" href="{{ url_for('loja.busca', filtro='promocao') }}">Ver ofertas</a>
+</div>
+{% endif %}
+{% endblock %}
+{% block rodape_similares %}{{ rodape_similares(sugestoes, "Aproveite também", "Ofertas do dia com preços variados") }}{% endblock %}

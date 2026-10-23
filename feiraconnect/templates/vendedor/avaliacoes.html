@@ -1,0 +1,21 @@
+{% extends "vendedor/base.html" %}
+{% from "_macros.html" import estrelas, avatar, estrelas_rotulo %}
+{% block titulo %}Visualizações e comentários{% endblock %}
+{% block conteudo %}
+<div class="adm-topo"><h1>Visualizações e comentários</h1></div>
+<div class="tabela-wrap">
+<table class="tabela">
+  <thead><tr><th>Produto</th><th>Visualizações hoje</th><th>Últimos 7 dias</th><th>Total</th><th>Vendidos</th><th>Comentários</th><th>Nota</th></tr></thead>
+  <tbody>{% for p in produtos %}<tr><td><a class="link" href="{{ url_for('vendedor.produto_form', produto_id=p.id) }}">{{ p.nome }}</a></td><td>{{ p.hoje }}</td><td>{{ p.semana }}</td><td><b>👁 {{ p.visualizacoes }}</b></td><td>{{ p.vendidos }}</td><td>{{ p.comentarios }}</td><td>{{ estrelas(p.nota) }} {{ p.nota }}</td></tr>{% endfor %}</tbody>
+</table>
+</div>
+<section class="bloco" style="margin-top:18px">
+  <h2>Comentários dos clientes</h2>
+  {% for a in avaliacoes %}
+  <article class="avaliacao">
+    <div class="topo"><span class="quem">{{ avatar(a.cliente, a.foto, 32) }} <b style="color:var(--texto)">{{ a.cliente }}</b> {{ estrelas(a.nota) }} {{ estrelas_rotulo(a.nota) }}</span><span>{{ (a.atualizado_em or a.criado_em)|data_br }}</span></div>
+    <p><a class="link" href="{{ url_for('loja.produto', produto_id=a.produto_id) }}#avaliacoes">{{ a.produto }}</a>{% if a.comentario %} — {{ a.comentario }}{% endif %}</p>
+  </article>
+  {% else %}<p class="vazio-curto">Ainda não há comentários.</p>{% endfor %}
+</section>
+{% endblock %}
